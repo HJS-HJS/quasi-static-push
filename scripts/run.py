@@ -74,7 +74,7 @@ running = True
 while running:
     pygame_display_set()
 
-    print('')
+    print('---')
     ############# q #############
     # qo
     for idx, object in enumerate(objects):
@@ -86,6 +86,7 @@ while running:
     for idx, pusher_c in enumerate(pushers.finger_c):
         print('qm_{}:\t'.format(idx), pusher_c)
     
+    print('')
     ############# v #############
     # vo
     for idx, object in enumerate(objects):
@@ -96,11 +97,13 @@ while running:
     for idx, pusher_v in enumerate(pushers.finger_v):
         print('vm_{}:\t'.format(idx), pusher_v)
 
+    print('')
     ############# phi #############
     for idx_o, object in enumerate(objects):
         for idx_f, pusher_c in enumerate(pushers.finger_c):
             print('phi_{}:\t'.format(idx_o * pusher_num + idx_f), np.linalg.norm(pusher_c[:2] - object.c) - pushers.r - object.r)
 
+    print('')
     ############# nhat #############
     ############# vc #############
     unit_vectors = []
@@ -113,8 +116,10 @@ while running:
     for idx, unit_v in enumerate(unit_vectors):
         print('nhat_{}:\t'.format(idx), unit_v)
 
+    print('')
     for idx, vc in enumerate(vc_set):
         print('vc_{}:\t'.format(idx), vc)
+    print('')
 
 
     # 이벤트 처리
