@@ -5,23 +5,21 @@ from utils.object_circle import ObjectCircle
 from utils.object_pusher import ObjectPusher
 from utils.utils import *
 
-
+def pygame_display_set():
+    screen.fill(WHITE)
+    gap = 1 / unit
+    # horizontal
+    for y_idx in range(int(HEIGHT / gap)):
+        y_pos = y_idx * gap
+        pygame.draw.line(screen, LIGHTGRAY, (0, y_pos), (WIDTH, y_pos), 2)
+    # vertical
+    for x_idx in range(int(WIDTH / gap)):
+        x_pos = x_idx * gap
+        pygame.draw.line(screen, LIGHTGRAY, (x_pos, 0), (x_pos, HEIGHT), 2)
 def draw_circle(obj, unit, center, color):
     pygame.draw.circle(screen, color, (int(obj.c[0]/unit + center[0]), int(-obj.c[1]/unit + center[1])), obj.r / unit)
 def draw_pusher(pusher, unit, center, color):
     pygame.draw.circle(screen, color, (int(pusher[0]/unit + center[0]), int(-pusher[1]/unit + center[1])), pusher_radius / unit)
-def pygame_display_set():
-    screen.fill(WHITE)
-    gap = 1 / unit
-    # 가로선
-    for y_idx in range(int(HEIGHT / gap)):
-        y_pos = y_idx * gap
-        pygame.draw.line(screen, LIGHTGRAY, (0, y_pos), (WIDTH, y_pos), 2)
-
-    # 세로선
-    for x_idx in range(int(WIDTH / gap)):
-        x_pos = x_idx * gap
-        pygame.draw.line(screen, LIGHTGRAY, (x_pos, 0), (x_pos, HEIGHT), 2)
 
 
 # Initialize pygame
@@ -29,6 +27,7 @@ pygame.init()
 
 # Set pygame display
 WIDTH, HEIGHT = 800, 600
+display_center = np.array([WIDTH/2, HEIGHT/2])
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Quasi-static pushing")
 
@@ -39,25 +38,20 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 LIGHTGRAY = (200, 200, 200)
 
-# Set parameters
-unit = 0.01
-view_center = np.array([WIDTH/2, HEIGHT/2])
+## Set parameters
+# pixel unit
+unit = 0.01 #[m/pixel]
+
 # pusher
 pusher_num = 2
+pusher_heading = 0 #-np.pi/6
 pusher_radius = 0.1
 pusher_distance = 0.25
-pusher_position, pusher_rotation = np.array([0.0, -1.0]), 0
-# pusher_position, pusher_rotation = np.array([-0.5, 0.0]), np.pi/2
+pusher_position, pusher_rotation = np.array([0.0, -1.0]), 0 #np.array([-0.5, 0.0]), np.pi/2
 # object
 object_num = 1
 object_radius = 0.5
 object_position = np.array([0.0, 0.1])
-
-# Set pusher and object as object class
-pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_position[0], pusher_position[1], pusher_rotation)
-objects = []
-for i in range(object_num):
-    objects.append(ObjectCircle(object_radius, object_position[0], object_position[1]))
 
 # Set speed 
 input_u = [0.0, 0.0, 0.0]
@@ -66,10 +60,17 @@ unit_r_speed = 0.8  # [rad/s]
 frame = 0.016777    # 1[frame] = 0.016777[s]
 _rot = np.eye(2)
 
-# FPS 설정
+
+# Set pusher and object as object class
+pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
+objects = []
+for i in range(object_num):
+    objects.append(ObjectCircle(object_radius, object_position[0], object_position[1]))
+
+# Set FPS
 clock = pygame.time.Clock()
 
-# 메인 루프
+# Main Loop
 running = True
 while running:
     pygame_display_set()
@@ -170,11 +171,11 @@ while running:
     pushers.move_pusher(_rot@pushers.v[:2] * frame)
 
     # 원 그리기 (빨간색과 초록색 원)
-    list(map(lambda pusher: draw_pusher(pusher, unit, view_center, LIGHTGRAY), pushers.finger_c))
+    list(map(lambda pusher: draw_pusher(pusher, unit, display_center, LIGHTGRAY), pushers.finger_c))
 
     # 고정된 파란색 원 (중심 고정)
     for object in objects:
-        draw_circle(object, unit, view_center, BLUE)
+        draw_circle(object, unit, display_center, BLUE)
 
     # 화면 업데이트
     pygame.display.flip()

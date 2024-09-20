@@ -5,12 +5,12 @@ class ObjectPusher(object):
     '''
     2d pusher
     '''
-    def __init__(self, n_finger, radius, distance, center_x, center_y, rotation:float = 0.0):
+    def __init__(self, n_finger, radius, distance, heading, center_x, center_y, rotation):
         self.fingers = []
         for i in range(n_finger):
             self.fingers.append(ObjectCircle(radius,
-                                             distance * np.cos(2 * np.pi / n_finger * i),
-                                             distance * np.sin(2 * np.pi / n_finger * i),
+                                             distance * np.cos(2 * np.pi / n_finger * i + heading),
+                                             distance * np.sin(2 * np.pi / n_finger * i + heading),
                                              2 * np.pi / n_finger * i
                                              ))
 
