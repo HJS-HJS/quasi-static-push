@@ -1,82 +1,81 @@
 import numpy as np
 from utils.object_circle import ObjectCircle
 
+
 class ObjectPusher(object):
     '''
     2d pusher
     '''
     def __init__(self, n_finger, radius, distance, heading, center_x, center_y, rotation):
-        self.fingers = []
+        self.pushers = []
+        self.rel_pose = []
         for i in range(n_finger):
-            self.fingers.append(ObjectCircle(radius,
-                                             distance * np.cos(2 * np.pi / n_finger * i + heading),
-                                             distance * np.sin(2 * np.pi / n_finger * i + heading),
-                                             2 * np.pi / n_finger * i
+            self.pushers.append(ObjectCircle(radius,
+                                             0,
+                                             0,
+                                             0
                                              ))
-
+            self.rel_pose.append([distance * np.cos(2 * np.pi / n_finger * i + heading),
+                                  distance * np.sin(2 * np.pi / n_finger * i + heading),
+                                  2 * np.pi / n_finger * i,
+                                  ])
         self.radius = radius
         self.q = np.array([center_x, center_y, rotation])
-        self.velocity = np.array([0, 0, 0])
+        self.v = np.array([0, 0, 0])
+        self.update_pusher()
 
-    def point_velocity(self, norm):
-        _arr = np.array([[0, -1], [1, 0]])
-        return self.velocity[2] * self.radius * _arr @ norm + self.velocity[:2]
+    def __len__(self): return len(self.pushers)
+    
+    def __getitem__(self, i): return self.pushers[i]
 
-    def set_c(self, center):
+    def __iter__(self):
+        for pusher in self.pushers:
+            yield pusher
+
+    def apply_c(self, center):
         self.q[:2] = center
-        
-    def set_v(self, velocity):
-        self.velocity = velocity
+        # self.update_pusher()
 
-    def move_pusher(self, d_center):
-        self.q[:2] += d_center
+    def apply_rot(self, rotation):
+        self.q[2] = rotation
+        # self.update_pusher()
+
+    def apply_v(self, velocity):
+        self.v = velocity
+        # self.update_pusher()
+
+    def move_q(self, dq):
+        self.q += dq
+        self.update_pusher()
     
-    def rotate_pusher(self, r_center):
-        self.q[2] += r_center
-    
-    
-    @property
-    def finger_r(self):
-        return np.array([finger.r for finger in self.fingers])
-    
-    @property
-    def finger_c(self):
-        _rot = np.array([
-            [np.cos(self.q[2]), np.sin(self.q[2])],
-            [np.sin(self.q[2]), -np.cos(self.q[2])],
-            ])
-        return np.array([np.hstack([self.c + finger.c@_rot, self.rot + finger.rot]) for finger in self.fingers])
-        
-    @property
-    def finger_v(self):
+    def update_pusher(self):
         _rot = np.eye(3)
+        _w = np.array([0, 0, self.v[2]])
         _rot[:2,:2] = np.array([
             [np.cos(self.q[2]), np.sin(self.q[2])],
             [np.sin(self.q[2]), -np.cos(self.q[2])],
             ])
-        _w = np.array([0, 0, self.v[2]])
-        return np.array([np.hstack([self.v[:2] + np.cross(_w,finger.q@_rot)[:2], self.v[2]]) for finger in self.fingers])
+        for i, pusher in enumerate(self.pushers):
+            pusher.q = np.hstack([self.c + self.rel_pose[i][:2]@_rot[:2,:2], self.rot + self.rel_pose[i][2]])
+            pusher.v = np.hstack([self.v[:2] + np.cross(_w,pusher.q@_rot)[:2], self.v[2]])
+
 
     @property
     def r(self):
-        return self.radius
-    
-    @property
-    def q_deg(self):
-        return np.hstack([self.c, np.rad2deg(self.rot)])
+        return np.hstack([pusher.r for pusher in self.pushers])
     
     @property
     def c(self):
         return self.q[:2]
-        
-    @property
-    def v(self):
-        return self.velocity
-    
-    @property
-    def v_deg(self):
-        return np.hstack([self.velocity[:2], np.rad2deg(self.velocity[2])])
-    
+
     @property
     def rot(self):
         return self.q[2]
+
+    @property
+    def q_pusher(self):
+        return np.hstack([pusher.q for pusher in self.pushers])
+    
+    @property
+    def v_pusher(self):
+        return np.hstack([pusher.v for pusher in self.pushers])

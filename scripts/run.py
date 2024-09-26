@@ -1,9 +1,12 @@
-import pygame
+import time
 import numpy as np
+import pygame
 
 from utils.object_circle import ObjectCircle
 from utils.object_pusher import ObjectPusher
-from utils.utils import *
+from utils.object_slider import ObjectSlider
+from utils.param_function import ParamFunction
+# from utils.utils import *
 
 def pygame_display_set():
     screen.fill(WHITE)
@@ -20,7 +23,6 @@ def draw_circle(obj, unit, center, color):
     pygame.draw.circle(screen, color, (int(obj.c[0]/unit + center[0]), int(-obj.c[1]/unit + center[1])), obj.r / unit)
 def draw_pusher(pusher, unit, center, color):
     pygame.draw.circle(screen, color, (int(pusher[0]/unit + center[0]), int(-pusher[1]/unit + center[1])), pusher_radius / unit)
-
 
 # Initialize pygame
 pygame.init()
@@ -49,23 +51,29 @@ pusher_radius = 0.1
 pusher_distance = 0.25
 pusher_position, pusher_rotation = np.array([0.0, -1.0]), 0 #np.array([-0.5, 0.0]), np.pi/2
 # object
-object_num = 1
-object_radius = 0.5
-object_position = np.array([0.0, 0.1])
+# object_radius = np.array([0.5, 0.3])
+# object_position = np.array([[0.0, 0.1], [1.0, -2.0]])
+object_radius = np.array([0.5])
+object_position = np.array([[0.0, 0.1]])
 
 # Set speed 
 input_u = [0.0, 0.0, 0.0]
 unit_v_speed = 0.5  # [m/s]
 unit_r_speed = 0.8  # [rad/s]
-frame = 0.016777    # 1[frame] = 0.016777[s]
+# frame = 0.016777    # 1[frame] = 0.016777[s]
+frame = 0.033333    # 1[frame] = 0.033333[s]
 _rot = np.eye(2)
 
 
 # Set pusher and object as object class
 pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
-objects = []
-for i in range(object_num):
-    objects.append(ObjectCircle(object_radius, object_position[0], object_position[1]))
+
+sliders = ObjectSlider()
+for i in range(len(object_radius)):
+    sliders.append(ObjectCircle(object_radius[i], object_position[i][0], object_position[i][1]))
+
+param = ParamFunction(sliders, pushers)
+param.update_param()
 
 # Set FPS
 clock = pygame.time.Clock()
@@ -73,116 +81,84 @@ clock = pygame.time.Clock()
 # Main Loop
 running = True
 while running:
+    now = time.time()
+
     pygame_display_set()
-
-    print('---')
-    ############# q #############
-    # qo
-    for idx, object in enumerate(objects):
-        print('qo_{}:\t'.format(idx), object.q_deg)
-        object.set_v([0, 0, 1])
-    # qmg
-    print('qm_g:\t',pushers.q_deg)
-    # qm
-    for idx, pusher_c in enumerate(pushers.finger_c):
-        print('qm_{}:\t'.format(idx), pusher_c)
     
-    print('')
-    ############# v #############
-    # vo
-    for idx, object in enumerate(objects):
-        print('vo_{}:\t'.format(idx),object.v_deg)
-    # vmg
-    print('vm_g:\t',pushers.v_deg)
-    # vm
-    for idx, pusher_v in enumerate(pushers.finger_v):
-        print('vm_{}:\t'.format(idx), pusher_v)
+    param.update_param()
 
-    print('')
-    ############# phi #############
-    for idx_o, object in enumerate(objects):
-        for idx_f, pusher_c in enumerate(pushers.finger_c):
-            print('phi_{}:\t'.format(idx_o * pusher_num + idx_f), np.linalg.norm(pusher_c[:2] - object.c) - pushers.r - object.r)
+    # print('---')
+    # print('q:\t', param.q)
+    # print('v:\t', param.v)
+    # print('phi:\t', param.phi)
+    # print('nhat:\t', param.nhat)
+    # print('vc:\t', param.vc)
+    # print('')
 
-    print('')
-    ############# nhat #############
-    ############# vc #############
-    unit_vectors = []
-    vc_set = []
-    for object in objects:
-        for finger_c, finger_v in zip(pushers.finger_c, pushers.finger_v):
-            unit_vectors.append(unit_vector(finger_c[:2] - object.c))
-            vc_set.append(finger_v[:2] - object.point_velocity(unit_vector(finger_c[:2] - object.c)))
-
-    for idx, unit_v in enumerate(unit_vectors):
-        print('nhat_{}:\t'.format(idx), unit_v)
-
-    print('')
-    for idx, vc in enumerate(vc_set):
-        print('vc_{}:\t'.format(idx), vc)
-    print('')
-
-
-    # 이벤트 처리
+    # if(param.q is not None ):i = 0
+    # if(param.v is not None ):i = 0
+    # if(param.phi is not None ):i = 0
+    # if(param.nhat is not None ):i = 0
+    # if(param.vc is not None ):i = 0
+    # if(param.vc_jac is not None ):i = 0
+        
+    # Keyboard event
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # 키 입력 처리
+    # Keyboard input
     keys = pygame.key.get_pressed()
 
+    # Finish simulator if esc key is pressed
     if keys[pygame.K_ESCAPE]:
         running = False
     
-    # 중심 이동 (WASD)
-    if keys[pygame.K_w]:
-        input_u[0] = unit_v_speed
-    elif keys[pygame.K_s]:
-        input_u[0] = -unit_v_speed
-    else:
-        input_u[0] = 0
-
-    if keys[pygame.K_a]:
-        input_u[1] = unit_v_speed
-    elif keys[pygame.K_d]:
-        input_u[1] = -unit_v_speed
-    else:
-        input_u[1] = 0
-
-    # 회전 처리 (Q, E)
-    if keys[pygame.K_q]:
-        input_u[2] = unit_r_speed
-    elif keys[pygame.K_e]:
-        input_u[2] = -unit_r_speed
-    else:
-        input_u[2] = 0
+    # Move pusher center (WASD)
+    # Move pusher center in y-axis (WS)
+    if keys[pygame.K_w]:    input_u[0] = unit_v_speed
+    elif keys[pygame.K_s]:  input_u[0] = -unit_v_speed
+    else:                   input_u[0] = 0
+    # Move pusher center in x-axis (ad)
+    if keys[pygame.K_a]:    input_u[1] = unit_v_speed
+    elif keys[pygame.K_d]:  input_u[1] = -unit_v_speed
+    else:                   input_u[1] = 0
+    # Rotate pusher center (qe)
+    if keys[pygame.K_q]:    input_u[2] = unit_r_speed
+    elif keys[pygame.K_e]:  input_u[2] = -unit_r_speed
+    else:                   input_u[2] = 0
 
 
-    # 중심 위치 업데이트
+
+
+
+
+    # Calculate pusher real velocity
+    pusher_v = input_u
+
+    # Update pusher center position
     _rot = np.array([
         [-np.sin(pushers.rot), -np.cos(pushers.rot)],
         [np.cos(pushers.rot), -np.sin(pushers.rot)]
         ])
 
-    pusher_v = input_u
+    # Update pusher velocity
+    pushers.apply_v(pusher_v)
+    # Update pusher position
+    pushers.move_q(np.hstack([_rot@pushers.v[:2] * frame, pushers.v[2] * frame]))
 
-    pushers.set_v(pusher_v)
-    pushers.rotate_pusher(pushers.v[2] * frame)
-    pushers.move_pusher(_rot@pushers.v[:2] * frame)
+    
+    # Draw Objects
+    list(map(lambda pusher: draw_circle(pusher, unit, display_center, RED), pushers))  # Draw pushers
+    list(map(lambda slider: draw_circle(slider, unit, display_center, BLUE), sliders)) # Draw sliders
 
-    # 원 그리기 (빨간색과 초록색 원)
-    list(map(lambda pusher: draw_pusher(pusher, unit, display_center, LIGHTGRAY), pushers.finger_c))
+    # Update display
+    # pygame.display.flip()
+    pygame.display.update()
 
-    # 고정된 파란색 원 (중심 고정)
-    for object in objects:
-        draw_circle(object, unit, display_center, BLUE)
+    # Set fps
+    clock.tick(30)
+    print("Time spent:", time.time() - now)
 
-    # 화면 업데이트
-    pygame.display.flip()
-
-    # FPS 설정
-    clock.tick(60)
-# 게임 종료
+# Exit simulator
 pygame.quit()
-
-
