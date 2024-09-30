@@ -49,7 +49,6 @@ class QuasiStateSim(object):
 
         if sol[0] is None:
             print('Solver failed: ', sol)
-            print(phi)
             return qs, qp + u_input
 
         _qs = qs + A.dot(JS.T.dot(sol[0][:l]))

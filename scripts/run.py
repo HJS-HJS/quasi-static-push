@@ -1,4 +1,5 @@
 import time
+import yaml
 import numpy as np
 import pygame
 
@@ -7,6 +8,8 @@ from utils.object_pusher import ObjectPusher
 from utils.object_slider import ObjectSlider
 from utils.param_function import ParamFunction
 from utils.quasi_state_sim import QuasiStateSim
+
+from utils.color import COLOR
 
 def pygame_display_set():
     screen.fill(WHITE)
@@ -27,45 +30,48 @@ def draw_pusher(pusher, unit, center, color):
 # Initialize pygame
 pygame.init()
 
+# Get config file
+with open("../config/config.yaml") as f:
+    config = yaml.load(f,Loader=yaml.FullLoader)
+
 # Set pygame display
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = config["display"]["WIDTH"], config["display"]["HEIGHT"]
 display_center = np.array([WIDTH/2, HEIGHT/2])
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Quasi-static pushing")
 
 # Set color
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-LIGHTGRAY = (200, 200, 200)
+WHITE       = COLOR["WHITE"]
+RED         = COLOR["RED"]
+GREEN       = COLOR["GREEN"]
+BLUE        = COLOR["BLUE"]
+LIGHTGRAY   = COLOR["LIGHTGRAY"]
 
 ## Set parameters
 # pixel unit
-unit = 0.01 #[m/pixel]
+unit = config["display"]["unit"] #[m/pixel]
 
 # pusher
-pusher_num, pusher_heading = 2, 0
-# pusher_num, pusher_heading = 3, np.pi/6
-pusher_radius = 0.1
-# pusher_distance = 0.25
-pusher_distance = 0.4
-pusher_position, pusher_rotation = np.array([0.0, -1.0]), 0 #np.array([-0.5, 0.0]), np.pi/2
+pusher_num      = config["pusher"]["pusher_num"]
+pusher_heading  = config["pusher"]["pusher_heading"]
+pusher_radius   = config["pusher"]["pusher_radius"]
+pusher_distance = config["pusher"]["pusher_distance"]
+pusher_position = config["pusher"]["pusher_position"]
+pusher_rotation = config["pusher"]["pusher_rotation"]
+
 # object
-# slider_radius = np.array([0.5, 0.3])
-# slider_position = np.array([[0.0, 0.1], [1.0, -2.0]])
-slider_radius = np.array([0.5])
-slider_position = np.array([[0.0, 0.1]])
+slider_radius   = config["slider"]["slider_radius"]
+slider_position = config["slider"]["slider_position"]
 
 # Set speed 
 u_input = np.array([0.0, 0.0, 0.0])
-unit_v_speed = 0.5  # [m/s]
-unit_r_speed = 0.8  # [rad/s]
+unit_v_speed = config["pusher"]["unit_v_speed"]  # [m/s]
+unit_r_speed = config["pusher"]["unit_r_speed"]  # [rad/s]
 
 # Set simulate param
-fps = 60
-frame = 1/fps    # 1 frame = 1/fps
-sim_step = 100
+fps = config["simulator"]["fps"]
+frame = 1/fps                              # 1 frame = 1/fps
+sim_step = config["simulator"]["sim_step"] # Maximun LCP solver step
 simulator = QuasiStateSim(sim_step)
 
 # Set pusher and object as object class
@@ -104,22 +110,22 @@ while running:
     
     # Move pusher center (WASD)
     # Move pusher center in y-axis (WS)
-    if keys[pygame.K_w]:    u_input[0] = unit_v_speed
-    elif keys[pygame.K_s]:  u_input[0] = -unit_v_speed
-    else:                   u_input[0] = 0
+    if keys[pygame.K_w]:    u_input[0] = unit_v_speed   # Move forward
+    elif keys[pygame.K_s]:  u_input[0] = -unit_v_speed  # Move backward
+    else:                   u_input[0] = 0              # Stop
     # Move pusher center in x-axis (ad)
-    if keys[pygame.K_a]:    u_input[1] = unit_v_speed
-    elif keys[pygame.K_d]:  u_input[1] = -unit_v_speed
-    else:                   u_input[1] = 0
+    if keys[pygame.K_a]:    u_input[1] = unit_v_speed   # Move left
+    elif keys[pygame.K_d]:  u_input[1] = -unit_v_speed  # Move right
+    else:                   u_input[1] = 0              # Stop
     # Rotate pusher center (qe)
-    if keys[pygame.K_q]:    u_input[2] = unit_r_speed
-    elif keys[pygame.K_e]:  u_input[2] = -unit_r_speed
-    else:                   u_input[2] = 0
+    if keys[pygame.K_q]:    u_input[2] = unit_r_speed   # Turn ccw
+    elif keys[pygame.K_e]:  u_input[2] = -unit_r_speed  # Turn cw
+    else:                   u_input[2] = 0              # Stop
 
     # Update pusher center position
     _rot = np.array([
         [-np.sin(pushers.rot), -np.cos(pushers.rot)],
-        [np.cos(pushers.rot), -np.sin(pushers.rot)]
+        [np.cos(pushers.rot),  -np.sin(pushers.rot)]
         ])
 
     # run simulator
@@ -136,26 +142,24 @@ while running:
 
     # Update sliders
     for idx, slider in enumerate(sliders):
-        # Update velocity
-        slider.v = (qs[idx*3:idx*3 + 3] - slider.q) / frame
-        # Update position
-        slider.q = qs[idx*3:idx*3 + 3]
+        slider.v = (qs[idx*3:idx*3 + 3] - slider.q) / frame # Update velocity
+        slider.q = qs[idx*3:idx*3 + 3]                      # Update position
 
     # Update pusher
-    # Update velocity
-    pushers.apply_v((qp - param.qp) / frame)
-    # Update position
-    pushers.q = qp
+    pushers.apply_v((qp - param.qp) / frame)                # Update velocity
+    pushers.q = qp                                          # Update position
 
     # Draw Objects
-    list(map(lambda pusher: draw_pusher(pusher, unit, display_center, RED), pushers.q_pusher))  # Draw pushers
-    list(map(lambda slider: draw_circle(slider, unit, display_center, BLUE), sliders)) # Draw sliders
+    list(map(lambda pusher: draw_pusher(pusher, unit, display_center, RED), pushers.q_pusher)) # Draw pushers
+    list(map(lambda slider: draw_circle(slider, unit, display_center, BLUE), sliders))         # Draw sliders
 
     # Update display
     pygame.display.update()
 
     # Set fps
     clock.tick(fps)
+
+    # Print spent time taken for one iter
     print("Time spent:", time.time() - now)
 
 # Exit simulator
