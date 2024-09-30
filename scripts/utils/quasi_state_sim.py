@@ -28,20 +28,13 @@ class QuasiStateSim(object):
         JS = np.concatenate((JNS, JTS), axis = 0)
         JP = np.concatenate((JNP, JTP), axis = 0)
 
-        M[:6,:6] = JS.dot(A.dot(JS.T))
-        M[:6,6:] = np.concatenate((Z, E), axis = 0)
-        M[6:,:6] = np.concatenate((mu, -E.T), axis = 1)
-        M[6:,6:] = Z
+        M[:6,:6] = JS.dot(A.dot(JS.T))                  + JP.dot(B.dot(JP.T))
+        M[:6,6:] = np.concatenate((Z, E), axis = 0)     + np.concatenate((Z, ZE), axis = 0)
+        M[6:,:6] = np.concatenate((mu, -E.T), axis = 1) + np.concatenate((Z, ZE.T), axis = 1)
+        M[6:,6:] = 2 * Z
 
-        M[:6,:6] += JP.dot(B.dot(JP.T))
-        M[:6,6:] += np.concatenate((Z, ZE), axis = 0)
-        M[6:,:6] += np.concatenate((Z, ZE.T), axis = 1)
-        M[6:,6:] += Z
-
-        # w[:6] = JP.dot(u_input)
         w[:6] = self.dt * JP.dot(u_input)
         w[:2] += phi.reshape(-1)
-
 
         sol = LCPSolver(M,w).solve()
 

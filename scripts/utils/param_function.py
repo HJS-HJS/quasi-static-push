@@ -46,7 +46,7 @@ class ParamFunction(object):
         self.m_qp = Matrix(self.sym_qp)
         self.m_vp = Matrix(self.sym_vp)
         self.m_rp = Matrix(self.sym_rp)
-        
+
         self.m_qp_p = self.pushers.m_q_set
         self.m_vp_p = self.pushers.m_v_set
 
@@ -97,8 +97,8 @@ class ParamFunction(object):
         self.p_qp = Matrix(self.pushers.q.reshape(-1,3))
         self.p_vs = Matrix(self.sliders.v.reshape(-1,3))
         self.p_vp = Matrix(self.pushers.v.reshape(-1,3))
-        self.p_rs = Matrix(self.sliders.r.reshape(1, -1))
-        self.p_rp = Matrix(self.pushers.r.reshape(1, -1))
+        self.p_rs = Matrix(self.sliders.r.reshape(1,-1))
+        self.p_rp = Matrix(self.pushers.r.reshape(1,-1))
 
     @property
     def q(self):
