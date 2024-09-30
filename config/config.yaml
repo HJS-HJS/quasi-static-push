@@ -1,5 +1,5 @@
 simulator:
-  fps      : 60  # 60fps
+  fps      : 30  # 60fps
   sim_step : 100 # Maximun LCP solver step
 
 display:
@@ -23,12 +23,12 @@ pusher:
   # pusher_rotation : 0
 
   unit_v_speed    : 0.5  # [m/s]
-  unit_r_speed    : 0.8  # [rad/s]
+  unit_r_speed    : 0.4  # [rad/s]
 
 
 slider:
-  slider_radius   : [0.5]
-  slider_position : [[0.0, 0.1]]
+  # slider_radius   : [0.5]
+  # slider_position : [[0.0, 0.1]]
 
-  # slider_radius   : [0.5, 0.3]
-  # slider_position : [[0.0, 0.1], [1.0, -2.0]]
+  slider_radius   : [0.5, 0.3]
+  slider_position : [[0.0, 0.1], [1.0, -2.0]]

@@ -19,8 +19,9 @@ class QuasiStateSim(object):
             n_contac = n_c,
             n_slider = n_s,
             n_pusher = n_p,
-            fascale  = 10, 
-            fbscale  = 1,
+            fmscale  = 0.01, 
+            fascale  = 5, 
+            fbscale  = 0.05,
             )
 
         E = np.repeat(np.eye(n_c), 2, axis=0)
@@ -37,7 +38,7 @@ class QuasiStateSim(object):
         M[:l,:l] = JS.dot(A.dot(JS.T))                  + JP.dot(B.dot(JP.T))
         M[:l,l:] = np.concatenate((Z, E), axis = 0)     + np.concatenate((Z, ZE), axis = 0)
         M[l:,:l] = np.concatenate((mu, -E.T), axis = 1) + np.concatenate((Z, ZE.T), axis = 1)
-        M[l:,l:] = 2 * Z
+        M[l:,l:] = Z                                    + Z
 
         w[:l] = JP.dot(u_input)
         w[:n_c] += phi.reshape(-1)
@@ -47,18 +48,23 @@ class QuasiStateSim(object):
                         maxIter = self.n_steps
                         ).solve()
 
+        # print(sol)
         if sol[0] is None:
-            print('Solver failed: ', sol)
+            print('[0] Solver failed: ', sol)
             return qs, qp + u_input
 
+        if np.max(A.dot(JS.T.dot(sol[0][:l]))) > 0.035:
+            print('[1] Solver jump: ', sol)
+            print(A.dot(JS.T.dot(sol[0][:l])))
+
+            return qs, qp + u_input
         _qs = qs + A.dot(JS.T.dot(sol[0][:l]))
-        # _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + u_input
-        _qp = qp + u_input
+        _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + u_input
 
         return _qs, _qp
     
-    def sim_matrix(self, n_contac, n_slider, n_pusher, fascale, fbscale):
-        _mu = np.eye(n_contac)
+    def sim_matrix(self, n_contac, n_slider, n_pusher, fmscale, fascale, fbscale):
+        _mu = np.eye(n_contac)* fmscale
         _A = np.eye(n_slider) * fascale
         _B = np.eye(n_pusher) * fbscale
         return _mu, _A, _B
