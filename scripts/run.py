@@ -81,7 +81,7 @@ sliders = ObjectSlider()
 for i in range(len(slider_radius)):
     sliders.append(ObjectCircle(slider_radius[i], slider_position[i][0], slider_position[i][1]))
 
-param = ParamFunction(sliders, pushers)
+param = ParamFunction(sliders, pushers, False)
 param.update_param()
 
 # Set FPS

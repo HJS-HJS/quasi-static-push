@@ -6,9 +6,10 @@ class ParamFunction(object):
     '''
     Calculate objects param
     '''
-    def __init__(self, sliders, pushers):
+    def __init__(self, sliders, pushers, simplify):
         self.sliders = sliders
         self.pushers = pushers
+        self.simplify = simplify
 
         self.initialize_param()
 
@@ -82,10 +83,11 @@ class ParamFunction(object):
 
         self.m_vc_jac = self.m_vc.reshape(1,n_phi * 2).jacobian(self.m_v)
 
-        self.m_phi    = simplify(self.m_phi)
-        self.m_nhat   = simplify(self.m_nhat)
-        self.m_vc     = simplify(self.m_vc)
-        self.m_vc_jac = simplify(self.m_vc_jac)
+        if self.simplify:
+            self.m_phi    = simplify(self.m_phi)
+            self.m_nhat   = simplify(self.m_nhat)
+            self.m_vc     = simplify(self.m_vc)
+            self.m_vc_jac = simplify(self.m_vc_jac)
 
         self.m_JN     = zeros(n_phi, len(self.q))
         self.m_JT     = zeros(2 * n_phi, len(self.v))
@@ -95,8 +97,9 @@ class ParamFunction(object):
             self.m_JT[2*i,:] = (_rot * self.m_nhat[i,:].T).T*self.m_vc_jac[i*2:i*2+2,:]
             self.m_JT[2*i + 1,:] = -(_rot * self.m_nhat[i,:].T).T*self.m_vc_jac[i*2:i*2+2,:]
 
-        self.m_JN = simplify(self.m_JN)
-        self.m_JT = simplify(self.m_JT)
+        if self.simplify:
+            self.m_JN = simplify(self.m_JN)
+            self.m_JT = simplify(self.m_JT)
 
         self.m_JNS = self.m_JN[:,:len(self.sliders.v)]
         self.m_JNP = self.m_JN[:,len(self.sliders.v):]
