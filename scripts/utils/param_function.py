@@ -53,8 +53,7 @@ class ParamFunction(object):
 
         self.m_v = Matrix([self.m_vs.col_join(self.m_vp)[:]])
 
-        # n_phi = len(self.pushers) * len(self.sliders)
-        n_phi = len(self.pushers) * len(self.sliders) + ParamFunction.combination(len(self.pushers), 2)
+        n_phi = len(self.pushers) * len(self.sliders) + ParamFunction.combination(len(self.sliders), 2)
         
         self.m_phi  = zeros(n_phi, 1)
         self.m_nhat = zeros(n_phi, 2)
