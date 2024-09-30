@@ -5,12 +5,10 @@ class QuasiStateSim(object):
     '''
     Quasi-state simulator
     '''
-    def __init__(self, dt, n_steps):
-        self.dt = dt
+    def __init__(self, n_steps):
         self.n_step = n_steps
 
     def run(self, u_input, qs, qp, phi, JNS, JNP, JTS, JTP):
-
 
         n_c   = phi.shape[0] # number of contact pairs
         n_s   = JNS.shape[1] # number of slider q
@@ -21,8 +19,8 @@ class QuasiStateSim(object):
             n_contac = n_c,
             n_slider = n_s,
             n_pusher = n_p,
-            fascale  = 1, 
-            fbscale  = 0.1,
+            fascale  = 10, 
+            fbscale  = 1,
             )
 
         E = np.repeat(np.eye(n_c), 2, axis=0)
@@ -41,19 +39,22 @@ class QuasiStateSim(object):
         M[l:,:l] = np.concatenate((mu, -E.T), axis = 1) + np.concatenate((Z, ZE.T), axis = 1)
         M[l:,l:] = 2 * Z
 
-        w[:l] = self.dt * JP.dot(u_input)
+        w[:l] = JP.dot(u_input)
         w[:n_c] += phi.reshape(-1)
 
-        sol = LCPSolver(M,w).solve()
+        sol = LCPSolver(M = M,
+                        q = w,
+                        maxIter = self.n_steps
+                        ).solve()
 
         if sol[0] is None:
             print('Solver failed: ', sol)
             print(phi)
-            return qs, qp + self.dt * u_input
+            return qs, qp + u_input
 
         _qs = qs + A.dot(JS.T.dot(sol[0][:l]))
-        # _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + self.dt * u_input
-        _qp = qp + self.dt * u_input
+        # _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + u_input
+        _qp = qp + u_input
 
         return _qs, _qp
     

@@ -45,10 +45,11 @@ LIGHTGRAY = (200, 200, 200)
 unit = 0.01 #[m/pixel]
 
 # pusher
-pusher_num = 2
-pusher_heading = 0 #-np.pi/6
+pusher_num, pusher_heading = 2, 0
+# pusher_num, pusher_heading = 3, np.pi/6
 pusher_radius = 0.1
-pusher_distance = 0.25
+# pusher_distance = 0.25
+pusher_distance = 0.4
 pusher_position, pusher_rotation = np.array([0.0, -1.0]), 0 #np.array([-0.5, 0.0]), np.pi/2
 # object
 # slider_radius = np.array([0.5, 0.3])
@@ -123,7 +124,7 @@ while running:
 
     # run simulator
     qs, qp = simulator.run(
-        u_input = np.hstack([_rot@u_input[:2], u_input[2]]),
+        u_input = np.hstack([_rot@u_input[:2], u_input[2]]) * frame,
         qs      = param.qs,
         qp      = param.qp,
         phi     = param.phi,
