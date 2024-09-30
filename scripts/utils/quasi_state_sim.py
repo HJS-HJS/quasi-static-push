@@ -11,45 +11,54 @@ class QuasiStateSim(object):
 
     def run(self, u_input, qs, qp, phi, JNS, JNP, JTS, JTP):
 
-        mu, A, B = self.sim_matrix(1, 0.1)
 
-        m = JNS.shape[0]
-        E = np.tile(np.eye(m), reps = [1, 2])
-        E = np.array([
-            E[0::m,:],
-            E[1::m,:],
-            ]).reshape(2*m, m)
+        n_c   = phi.shape[0] # number of contact pairs
+        n_s   = JNS.shape[1] # number of slider q
+        n_p   = JNP.shape[1] # number of pusher q
+        l = n_c * 3
+
+        mu, A, B = self.sim_matrix(
+            n_contac = n_c,
+            n_slider = n_s,
+            n_pusher = n_p,
+            fascale  = 1, 
+            fbscale  = 0.1,
+            )
+
+        E = np.repeat(np.eye(n_c), 2, axis=0)
+        
         ZE = E * 0
-        Z = np.zeros((m, m))
+        Z = np.zeros((n_c, n_c))
 
-        M = np.zeros((3 * m + m, 3 * m + m))
-        w = np.zeros(3 * m + m)
+        M = np.zeros((4 * n_c, 4 * n_c))
+        w = np.zeros(4 * n_c)
 
         JS = np.concatenate((JNS, JTS), axis = 0)
         JP = np.concatenate((JNP, JTP), axis = 0)
 
-        M[:6,:6] = JS.dot(A.dot(JS.T))                  + JP.dot(B.dot(JP.T))
-        M[:6,6:] = np.concatenate((Z, E), axis = 0)     + np.concatenate((Z, ZE), axis = 0)
-        M[6:,:6] = np.concatenate((mu, -E.T), axis = 1) + np.concatenate((Z, ZE.T), axis = 1)
-        M[6:,6:] = 2 * Z
+        M[:l,:l] = JS.dot(A.dot(JS.T))                  + JP.dot(B.dot(JP.T))
+        M[:l,l:] = np.concatenate((Z, E), axis = 0)     + np.concatenate((Z, ZE), axis = 0)
+        M[l:,:l] = np.concatenate((mu, -E.T), axis = 1) + np.concatenate((Z, ZE.T), axis = 1)
+        M[l:,l:] = 2 * Z
 
-        w[:6] = self.dt * JP.dot(u_input)
-        w[:2] += phi.reshape(-1)
+        w[:l] = self.dt * JP.dot(u_input)
+        w[:n_c] += phi.reshape(-1)
 
         sol = LCPSolver(M,w).solve()
 
         if sol[0] is None:
-            print('Solver failed')
+            print('Solver failed: ', sol)
+            print(phi)
             return qs, qp + self.dt * u_input
 
-        _qs = qs + A.dot(JS.T.dot(sol[0][:6]))
-        _qp = qp + B.dot(JP.T.dot(sol[0][:6])) + self.dt * u_input
-        # _qp = qp + self.dt * u_input
+        _qs = qs + A.dot(JS.T.dot(sol[0][:l]))
+        # _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + self.dt * u_input
+        _qp = qp + self.dt * u_input
 
         return _qs, _qp
     
-    def sim_matrix(self, fascale, fbscale):
-        _A = np.eye(3) * fbscale
-        _B = np.eye(3) * fbscale
-        _mu = np.eye(2)
+    def sim_matrix(self, n_contac, n_slider, n_pusher, fascale, fbscale):
+        _mu = np.eye(n_contac)
+        _A = np.eye(n_slider) * fascale
+        _B = np.eye(n_pusher) * fbscale
         return _mu, _A, _B

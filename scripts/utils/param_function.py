@@ -52,9 +52,11 @@ class ParamFunction(object):
 
         self.m_v = Matrix([self.m_vs.col_join(self.m_vp)[:]])
 
-        self.m_phi  = zeros(len(self.pushers) * len(self.sliders), 1)
-        self.m_nhat = zeros(len(self.pushers) * len(self.sliders), 2)
-        self.m_vc   = zeros(len(self.pushers) * len(self.sliders), 2)
+        n_phi = len(self.pushers) * len(self.sliders)
+        
+        self.m_phi  = zeros(n_phi, 1)
+        self.m_nhat = zeros(n_phi, 2)
+        self.m_vc   = zeros(n_phi, 2)
 
         _rot = Matrix([[0, -1], [1, 0]])
 
@@ -67,19 +69,17 @@ class ParamFunction(object):
                 self.m_vc[i,:] = self.m_vp_p[i_p,0:2] - point_vel
                 i += 1
 
-        self.m_vc_jac = self.m_vc.reshape(1,len(self.pushers) * len(self.sliders) * 2).jacobian(self.m_v)
+        self.m_vc_jac = self.m_vc.reshape(1,n_phi * 2).jacobian(self.m_v)
 
-        self.m_phi      = simplify(self.m_phi)
-        self.m_nhat     = simplify(self.m_nhat)
-        self.m_vc       = simplify(self.m_vc)
-        self.m_vc_jac   = simplify(self.m_vc_jac)
+        self.m_phi    = simplify(self.m_phi)
+        self.m_nhat   = simplify(self.m_nhat)
+        self.m_vc     = simplify(self.m_vc)
+        self.m_vc_jac = simplify(self.m_vc_jac)
 
-        self.m_JN = zeros(len(self.m_phi), len(self.q))
-        self.m_JT = zeros(2 * len(self.m_phi), len(self.v))
+        self.m_JN     = zeros(n_phi, len(self.q))
+        self.m_JT     = zeros(2 * n_phi, len(self.v))
 
-        # _rot = rot_axis3(np.pi/2)[:2,:2]
-
-        for i in range(len(self.m_phi)):
+        for i in range(n_phi):
             self.m_JN[i,:] = self.m_nhat[i,:] * self.m_vc_jac[i*2:i*2+2,:]
             self.m_JT[2*i,:] = (_rot * self.m_nhat[i,:].T).T*self.m_vc_jac[i*2:i*2+2,:]
             self.m_JT[2*i + 1,:] = -(_rot * self.m_nhat[i,:].T).T*self.m_vc_jac[i*2:i*2+2,:]
