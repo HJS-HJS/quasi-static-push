@@ -66,7 +66,7 @@ unit_r_speed = 0.8  # [rad/s]
 fps = 60
 frame = 1/fps    # 1 frame = 1/fps
 sim_step = 100
-simulator = QuasiStateSim(frame, sim_step)
+simulator = QuasiStateSim(sim_step)
 
 # Set pusher and object as object class
 pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)

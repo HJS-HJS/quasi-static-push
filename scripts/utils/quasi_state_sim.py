@@ -6,7 +6,7 @@ class QuasiStateSim(object):
     Quasi-state simulator
     '''
     def __init__(self, n_steps):
-        self.n_step = n_steps
+        self.n_steps = n_steps
 
     def run(self, u_input, qs, qp, phi, JNS, JNP, JTS, JTP):
 
