@@ -12,6 +12,7 @@ pusher:
   pusher_heading  : 0
   pusher_radius   : 0.1
   pusher_distance : 0.25
+  # pusher_distance : 0.6
   pusher_position : [0.0, -1.0]
   pusher_rotation : 0
 
@@ -31,4 +32,4 @@ slider:
   # slider_position : [[0.0, 0.1]]
 
   slider_radius   : [0.5, 0.3]
-  slider_position : [[0.0, 0.1], [1.0, -2.0]]
+  slider_position : [[0.0, 1.0], [0.0, 0.1]]

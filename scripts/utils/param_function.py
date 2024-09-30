@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from sympy import Matrix, MatrixSymbol, zeros, sqrt, simplify, rot_axis3
 
@@ -52,7 +53,8 @@ class ParamFunction(object):
 
         self.m_v = Matrix([self.m_vs.col_join(self.m_vp)[:]])
 
-        n_phi = len(self.pushers) * len(self.sliders)
+        # n_phi = len(self.pushers) * len(self.sliders)
+        n_phi = len(self.pushers) * len(self.sliders) + ParamFunction.combination(len(self.pushers), 2)
         
         self.m_phi  = zeros(n_phi, 1)
         self.m_nhat = zeros(n_phi, 2)
@@ -67,6 +69,16 @@ class ParamFunction(object):
                 self.m_nhat[i,:] = ParamFunction.unit_vector(self.m_qp_p[i_p,0:2] - self.m_qs[i_s,0:2])
                 point_vel = (self.m_vs[i_s,2] * self.m_rs[i_s] * _rot * self.m_nhat[i,:].T).T + self.m_vs[i_s,:2]
                 self.m_vc[i,:] = self.m_vp_p[i_p,0:2] - point_vel
+                i += 1
+        
+        for i_s1 in range(len(self.sliders)):
+            for i_s2 in range(len(self.sliders) - i_s1 - 1):
+                i_s3 = i_s1 + i_s2 + 1
+                self.m_phi[i] = ParamFunction.norm(self.m_qs[i_s3,0:2] - self.m_qs[i_s1,0:2]) - self.m_rs[i_s3] - self.m_rs[i_s1]
+                self.m_nhat[i,:] = ParamFunction.unit_vector(self.m_qs[i_s3,0:2] - self.m_qs[i_s1,0:2])
+                point_vel1 = (self.m_vs[i_s1,2] * self.m_rs[i_s1] * _rot * self.m_nhat[i,:].T).T + self.m_vs[i_s1,:2]
+                point_vel3 = -(self.m_vs[i_s3,2] * self.m_rs[i_s3] * _rot * self.m_nhat[i,:].T).T + self.m_vs[i_s3,:2]
+                self.m_vc[i,:] = point_vel3 - point_vel1
                 i += 1
 
         self.m_vc_jac = self.m_vc.reshape(1,n_phi * 2).jacobian(self.m_v)
@@ -188,3 +200,11 @@ class ParamFunction(object):
     @staticmethod
     def norm(v):
         return sqrt(v.dot(v))
+
+
+    @staticmethod
+    def combination(n, r):
+        if n < r:
+            return 0
+        else:
+            return int(math.factorial(n) / (math.factorial(n - r) * math.factorial(r)))
