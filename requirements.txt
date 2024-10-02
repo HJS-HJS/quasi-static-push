@@ -1,3 +1,6 @@
 pygame
+pyyaml
 numpy
+matplotlib
 sympy
+scipy
