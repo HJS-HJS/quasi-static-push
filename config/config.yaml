@@ -29,7 +29,7 @@ pusher:
 
 slider:
   # slider_radius   : [0.5]
-  # slider_position : [[0.0, 0.1]]
+  # slider_position : [[0.0, 0.1, 0.0]]
 
   slider_radius   : [0.5, 0.3]
   slider_position : [[0.0, 1.0, 0.0], [0.0, 0.1, 0.0]]

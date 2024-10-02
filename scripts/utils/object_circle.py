@@ -1,43 +1,32 @@
+from sympy import MatrixSymbol, symbols, ones, Matrix, cos, sin
 import numpy as np
 
 class ObjectCircle(object):
     '''
     2d object
     '''
-    def __init__(self, radius, center_x, center_y, rotation:float = 0.0):
+    def __init__(self, q, v, radius, is_slider = False):
         self.radius = radius
-        self.q = np.array([center_x, center_y, rotation])
-        self.v = np.array([0, 0, 0])
+        self.q = q
+        self.v = v
+
+        if is_slider: q = MatrixSymbol('qp_', 1, 3)
+
+        self.r = ones(1)[0] * radius
+
+        self.sym_t = symbols('t', real=True)
+
+        self.m_fun = Matrix([
+            q[0] + self.r*cos(self.sym_t),
+            q[1] + self.r*sin(self.sym_t)
+        ])
 
     def point_velocity(self, norm):
         _arr = np.array([[0, -1], [1, 0]])
         return self.v[2] * self.radius * _arr @ norm + self.v[:2]
 
-    def apply_c(self, center):
-        self.q[:2] = center
-
-    def apply_q(self, q):
-        self.q = q
-
-    def apply_v(self, velocity):
-        self.v = velocity
-
-    @property
-    def r(self):
-        return self.radius
+    def points(self, q):
+        t = np.linspace(0, np.pi * 2, 30)
+        return np.array([self.m_fun.subs({self.sym_t: t_i, MatrixSymbol('qp_', 1, 3):Matrix(q.reshape(1,3))}) for t_i in t]).astype(np.float64).T.reshape(2, -1)
     
-    @property
-    def q_deg(self):
-        return np.hstack([self.c, np.rad2deg(self.rot)])
     
-    @property
-    def c(self):
-        return self.q[:2]
-    
-    @property
-    def v_deg(self):
-        return np.hstack([self.v[:2], np.rad2deg(self.v[2])])
-    
-    @property
-    def rot(self):
-        return self.q[2]

@@ -4,11 +4,9 @@ import numpy as np
 import pygame
 from sympy import Matrix
 
-from utils.object_circle_sym import ObjectCircle
+from utils.object_circle import ObjectCircle
 from utils.object_pusher import ObjectPusher
-from utils.object_pusher_sym import ObjectPusherSym
-# from utils.object_slider import ObjectSlider
-from utils.object_slider_sym import ObjectSlider
+from utils.object_slider import ObjectSlider
 from utils.param_function import ParamFunction
 from utils.quasi_state_sim import QuasiStateSim
 
@@ -30,8 +28,8 @@ def draw_circle(obj, unit, center, color):
 def draw_pusher(pusher, unit, center, color):
     pygame.draw.circle(screen, color, (int(pusher[0]/unit + center[0]), int(-pusher[1]/unit + center[1])), pusher_radius / unit)
 
-def draw_polygon(pusher, parents_q, unit, center, color):
-    _points = pusher.points(parents_q).T / unit
+def draw_polygon(obj, q, unit, center, color):
+    _points = obj.points(q).T / unit
     _points[:,0] = ( 1.0 * _points[:,0] + center[0])
     _points[:,1] = (-1.0 * _points[:,1] + center[1])
     pygame.draw.polygon(screen, color, _points.astype(np.int32).tolist(), 0)
@@ -84,14 +82,13 @@ sim_step = config["simulator"]["sim_step"] # Maximun LCP solver step
 simulator = QuasiStateSim(sim_step)
 
 # Set pusher and object as object class
-# pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
-pushers = ObjectPusherSym(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
+pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
 
 sliders = ObjectSlider()
 for i in range(len(slider_radius)):
     _q = Matrix([slider_position[i]])
     _v = Matrix([0, 0, 0])
-    sliders.append(ObjectCircle(_q, _v, slider_radius[i]))
+    sliders.append(ObjectCircle(_q, _v, slider_radius[i], True))
 
 param = ParamFunction(sliders, pushers, False)
 param.update_param()
@@ -162,11 +159,9 @@ while running:
     pushers.q = qp                                          # Update position
 
     # Draw Objects
-    # list(map(lambda pusher: draw_pusher(pusher, unit, display_center, RED), pushers.q_pusher)) # Draw pushers
     list(map(lambda pusher: draw_polygon(pusher, pushers.q, unit, display_center, RED), pushers)) # Draw pushers
+    list(map(lambda slider: draw_polygon(slider, slider.q, unit, display_center, BLUE), sliders)) # Draw sliders
     
-    list(map(lambda slider: draw_circle(slider, unit, display_center, BLUE), sliders))         # Draw sliders
-
     # Update display
     pygame.display.update()
 

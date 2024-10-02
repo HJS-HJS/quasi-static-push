@@ -1,7 +1,7 @@
 from sympy import Matrix, MatrixSymbol, zeros, sqrt, simplify, symbols, rot_axis3, pi
 import numpy as np
 from utils.object_circle import ObjectCircle
-
+from utils.diagram import *
 
 class ObjectPusher(object):
     '''
@@ -15,7 +15,6 @@ class ObjectPusher(object):
 
         self.m_q_set = zeros(n_finger, 3)
         self.m_v_set = zeros(n_finger, 3)
-        m_q_rel      = zeros(n_finger, 3)
 
         self.sym_q  = MatrixSymbol('qp_', 1, 3)
         self.sym_v  = MatrixSymbol('vp_', 1, 3)
@@ -27,27 +26,31 @@ class ObjectPusher(object):
         _w = Matrix([[0, 0, m_v[2]]])
 
         for i in range(n_finger):
-            self.pushers.append(ObjectCircle(radius,
-                                             0,
-                                             0,
-                                             0
-                                             ))
             _rel1 = distance * np.cos(2 * np.pi / n_finger * i + heading)
             _rel2 = distance * np.sin(2 * np.pi / n_finger * i + heading)
 
             if np.abs(_rel1) < 1e-10: _rel1 = 0
             if np.abs(_rel2) < 1e-10: _rel2 = 0
 
-            m_q_rel[i,:] = Matrix([[_rel1,
-                                    _rel2,
-                                    2 * pi / n_finger * i,
-                                    ]])
+            m_q_rel = Matrix([[_rel1,
+                        _rel2,
+                        2 * pi / n_finger * i,
+                        ]])
+            
+            _finger_q = zeros(1, 3)
+            _finger_v = zeros(1, 3)
 
-            self.m_q_set[i,:2] = m_q[0,:2] + m_q_rel[i,:2] * _rot[:2,:2]
-            self.m_q_set[i,2]  = m_q[0,2] + m_q_rel[i,2]
+            _finger_q[0,:2] = m_q[0,:2] + m_q_rel[0,:2] * _rot[:2,:2]
+            _finger_q[0,2]  = m_q[0,2] + m_q_rel[0,2]
 
-            self.m_v_set[i,:2] = m_v[0,:2] + _w.cross(m_q_rel[i,:] * _rot)[0,:2]
-            self.m_v_set[i,2]  = m_v[0,2]
+            _finger_v[0,:2] = m_v[0,:2] + _w.cross(m_q_rel[0,:] * _rot)[0,:2]
+            _finger_v[0,2]  = m_v[0,2]
+
+            _obj = ObjectCircle(_finger_q, _finger_v, radius, False)
+
+            self.pushers.append(_obj)
+            self.m_q_set[i,:] = _finger_q
+            self.m_v_set[i,:] = _finger_v
 
         self.m_q_set = simplify(self.m_q_set)
         self.m_v_set = simplify(self.m_v_set)
@@ -74,7 +77,7 @@ class ObjectPusher(object):
 
     @property
     def r(self):
-        return np.hstack([pusher.r for pusher in self.pushers])
+        return np.hstack([pusher.radius for pusher in self.pushers])
     
     @property
     def c(self):
@@ -84,15 +87,4 @@ class ObjectPusher(object):
     def rot(self):
         return self.q[2]
 
-    @property
-    def q_pusher(self):
-        return np.array(self.m_q_set.subs({self.sym_q: Matrix(self.q.reshape(1,3)),
-                                           self.sym_v: Matrix(self.v.reshape(1,3)),
-                                           })).astype(np.float64)
-    
-    @property
-    def v_pusher(self):
-        return np.array(self.m_v_set.subs({self.sym_q: Matrix(self.q.reshape(1,3)),
-                                           self.sym_v: Matrix(self.v.reshape(1,3)),
-                                           })).astype(np.float64).reshape(-1)
     

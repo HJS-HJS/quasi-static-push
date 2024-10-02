@@ -30,12 +30,12 @@ class ObjectSlider(object):
 
     @property
     def q(self):
-        return np.hstack([slider.q for slider in self.sliders])
+        return np.hstack([slider.q for slider in self.sliders]).reshape(-1)
     
     @property
     def v(self):
-        return np.hstack([slider.v for slider in self.sliders])
+        return np.hstack([slider.v for slider in self.sliders]).reshape(-1)
 
     @property
     def r(self):
-        return np.hstack([slider.r for slider in self.sliders])
+        return np.hstack([slider.r for slider in self.sliders]).reshape(-1)
