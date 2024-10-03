@@ -3,9 +3,9 @@ simulator:
   sim_step : 100 # Maximun LCP solver step
 
 display:
-  # WIDTH : 1600
-  # HEIGHT: 1200
-  # unit:   0.005 # [m/pixel]
+  WIDTH : 1600
+  HEIGHT: 1200
+  unit:   0.005 # [m/pixel]
 
 pusher:
   pusher_num      : 2
