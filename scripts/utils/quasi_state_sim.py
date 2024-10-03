@@ -19,9 +19,9 @@ class QuasiStateSim(object):
             n_contac = n_c,
             n_slider = n_s,
             n_pusher = n_p,
-            fmscale  = 0.01, 
-            fascale  = 5, 
-            fbscale  = 0.05,
+            fmscale  = 0.8,
+            fascale  = 5000, 
+            fbscale  = 0.01,
             )
 
         E = np.repeat(np.eye(n_c), 2, axis=0)

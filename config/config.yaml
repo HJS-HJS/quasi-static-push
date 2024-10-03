@@ -3,9 +3,9 @@ simulator:
   sim_step : 100 # Maximun LCP solver step
 
 display:
-  WIDTH : 1600
-  HEIGHT: 1200
-  unit:   0.005 # [m/pixel]
+  # WIDTH : 1600
+  # HEIGHT: 1200
+  # unit:   0.005 # [m/pixel]
 
 pusher:
   pusher_num      : 2
@@ -13,7 +13,9 @@ pusher:
   pusher_radius   : 0.1
   pusher_distance : 0.25
   # pusher_distance : 0.6
-  pusher_position : [0.0, -1.0]
+  # pusher_position : [0.0, -1.0]
+  pusher_position : [0.0, -0.5]
+  # pusher_position : [-1.0, -0.3]
   pusher_rotation : 0
 
   # pusher_num      : 3
@@ -26,13 +28,12 @@ pusher:
   unit_v_speed    : 0.5  # [m/s]
   unit_r_speed    : 0.4  # [rad/s]
 
-
 slider:
-  # slider_radius   : [0.5]
-  # slider_position : [[0.0, 0.1, 0.0]]
+  slider_radius   : [0.5]
+  slider_position : [[0.0, 0.1, 0.0]]
 
-  slider_radius   : [0.5, 0.3]
-  slider_position : [[0.0, 1.0, 0.0], [0.0, 0.1, 0.0]]
+  # slider_radius   : [0.5, 0.3]
+  # slider_position : [[0.0, 1.0, 0.0], [0.0, 0.1, 0.0]]
 
   # slider_radius   : [0.5, 0.3, 0.1, 0.5]
   # slider_position : [[0.0, 1.0], [0.0, 0.1], [1.5, 0.0], [1.0, 1.0]]

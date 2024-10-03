@@ -2,7 +2,7 @@ import time
 import yaml
 import numpy as np
 import pygame
-from sympy import Matrix
+from sympy import Matrix, MatrixSymbol
 
 from utils.object_circle import ObjectCircle
 from utils.object_pusher import ObjectPusher
@@ -12,30 +12,39 @@ from utils.quasi_state_sim import QuasiStateSim
 
 from utils.color import COLOR
 
-def pygame_display_set():
-    screen.fill(WHITE)
+def create_background_surface():
+    background_surface = pygame.Surface((WIDTH, HEIGHT))
+    background_surface.fill(WHITE)
     gap = 1 / unit
     # horizontal
     for y_idx in range(int(HEIGHT / gap)):
         y_pos = y_idx * gap
-        pygame.draw.line(screen, LIGHTGRAY, (0, y_pos), (WIDTH, y_pos), 2)
+        pygame.draw.line(background_surface, LIGHTGRAY, (0, y_pos), (WIDTH, y_pos), 2)
     # vertical
     for x_idx in range(int(WIDTH / gap)):
         x_pos = x_idx * gap
-        pygame.draw.line(screen, LIGHTGRAY, (x_pos, 0), (x_pos, HEIGHT), 2)
-def draw_circle(obj, unit, center, color):
-    pygame.draw.circle(screen, color, (int(obj.c[0]/unit + center[0]), int(-obj.c[1]/unit + center[1])), obj.r / unit)
-def draw_pusher(pusher, unit, center, color):
-    pygame.draw.circle(screen, color, (int(pusher[0]/unit + center[0]), int(-pusher[1]/unit + center[1])), pusher_radius / unit)
+        pygame.draw.line(background_surface, LIGHTGRAY, (x_pos, 0), (x_pos, HEIGHT), 2)
+    return background_surface
 
-def draw_polygon(obj, q, unit, center, color):
-    _points = obj.points(q).T / unit
-    _points[:,0] = ( 1.0 * _points[:,0] + center[0])
-    _points[:,1] = (-1.0 * _points[:,1] + center[1])
-    pygame.draw.polygon(screen, color, _points.astype(np.int32).tolist(), 0)
+def create_polygon_surface(points, color):
+    _points = points.T / unit
+    _points[:,0] = ( 1.0 * _points[:,0] + display_center[0])
+    _points[:,1] = (-1.0 * _points[:,1] + display_center[1])
+    _points[:,0] -= np.min(_points[:,0])
+    _points[:,1] -= np.min(_points[:,1])
+    width = np.max([p[0] for p in _points]) - np.min([p[0] for p in _points])
+    height = np.max([p[1] for p in _points]) - np.min([p[1] for p in _points])
+    polygon_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    pygame.draw.polygon(polygon_surface, color, _points.astype(int).tolist())
+    # pygame.draw.circle(polygon_surface, LIGHTGRAY, (int(width / 2), int(height * 1 / 4)), 2)
+    pygame.draw.line(polygon_surface, LIGHTGRAY, (0, height / 2), (width, height / 2), 1)
+    pygame.draw.line(polygon_surface, LIGHTGRAY, (width / 2, 0), (width / 2, height), 1)
+
+    return polygon_surface
 
 # Initialize pygame
 pygame.init()
+pygame.display.set_caption("Quasi-static pushing")
 
 # Get config file
 with open("../config/config.yaml") as f:
@@ -45,7 +54,6 @@ with open("../config/config.yaml") as f:
 WIDTH, HEIGHT = config["display"]["WIDTH"], config["display"]["HEIGHT"]
 display_center = np.array([WIDTH/2, HEIGHT/2])
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Quasi-static pushing")
 
 # Set color
 WHITE       = COLOR["WHITE"]
@@ -86,12 +94,23 @@ pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_headin
 
 sliders = ObjectSlider()
 for i in range(len(slider_radius)):
-    _q = Matrix([slider_position[i]])
-    _v = Matrix([0, 0, 0])
+    _q = np.array(slider_position[i])
+    _v = np.array([0, 0, 0])
     sliders.append(ObjectCircle(_q, _v, slider_radius[i], True))
 
 param = ParamFunction(sliders, pushers, False)
-param.update_param()
+
+backgound = create_background_surface()
+
+for pusher in pushers:
+    _center = np.array(pusher.q.subs({MatrixSymbol('qp_', 1, 3):Matrix(pushers.q.reshape(1,3))})).astype(float)[0]
+    pusher.polygon = create_polygon_surface(pusher.points(pushers.q), RED)
+    pusher.init_angle = _center[2]
+
+for slider in sliders:
+    _center = slider.q
+    slider.polygon = create_polygon_surface(slider.points(slider.q), BLUE)
+    slider.init_angle = _center[2]
 
 # Set FPS
 clock = pygame.time.Clock()
@@ -100,9 +119,8 @@ clock = pygame.time.Clock()
 running = True
 while running:
     now = time.time()
+    now1 = time.time()
 
-    pygame_display_set()
-    
     param.update_param()
 
     # Keyboard event
@@ -137,6 +155,8 @@ while running:
         [np.cos(pushers.rot),  -np.sin(pushers.rot)]
         ])
 
+    print('\tstep1:\t{:.10f}'.format(time.time() - now1))
+    now1 = time.time()
     # run simulator
     qs, qp = simulator.run(
         u_input = np.hstack([_rot@u_input[:2], u_input[2]]) * frame,
@@ -149,6 +169,8 @@ while running:
         JTP     = param.JTP,
         )
 
+    print('\tstep2:\t{:.10f}'.format(time.time() - now1))
+    now1 = time.time()
     # Update sliders
     for idx, slider in enumerate(sliders):
         slider.v = (qs[idx*3:idx*3 + 3] - slider.q) / frame # Update velocity
@@ -158,18 +180,35 @@ while running:
     pushers.apply_v((qp - param.qp) / frame)                # Update velocity
     pushers.q = qp                                          # Update position
 
+    print('\tstep3:\t{:.10f}'.format(time.time() - now1))
+    now1 = time.time()
+
+    # pygame_display_set()
+    screen.blit(backgound, (0, 0))
+
     # Draw Objects
-    list(map(lambda pusher: draw_polygon(pusher, pushers.q, unit, display_center, RED), pushers)) # Draw pushers
-    list(map(lambda slider: draw_polygon(slider, slider.q, unit, display_center, BLUE), sliders)) # Draw sliders
-    
+    for pusher in pushers:
+        _center = np.array(pusher.q.subs({MatrixSymbol('qp_', 1, 3):Matrix(pushers.q.reshape(1,3))})).astype(float)[0]
+        _surface = pusher.surface([int(_center[0]/unit + display_center[0]), int(-_center[1]/unit + display_center[1]), _center[2]])
+        screen.blit(_surface[0], _surface[1])
+
+    for slider in sliders:
+        _center = slider.q
+        _surface = slider.surface([int(_center[0]/unit + display_center[0]), int(-_center[1]/unit + display_center[1]), _center[2]])
+        screen.blit(_surface[0], _surface[1])
+
+    print('\tstep4:\t{:.10f}'.format(time.time() - now1))
+    now1 = time.time()
+
     # Update display
-    pygame.display.update()
+    pygame.display.flip()
 
     # Set fps
     clock.tick(fps)
 
     # Print spent time taken for one iter
-    print("Time spent:", time.time() - now)
+    print('\tstep5:\t{:.10f}'.format(time.time() - now1))
+    print("Time spent:\t{:.10f}".format(time.time() - now))
 
 # Exit simulator
 pygame.quit()
