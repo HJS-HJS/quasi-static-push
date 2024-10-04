@@ -1,0 +1,60 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/rise/catkin_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-doosan-robot/common/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-doosan-robot/dsr_control/include/**",
+        "/home/rise/catkin_ws/src/keti/sdk_challenge/keti_sdk_simulator/keti_robot_control/include/**",
+        "/home/rise/catkin_ws/src/keti/sdk_challenge/keti_sdk_simulator/keti_robot_server/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/linefit_ground_segmentation_details/linefit_ground_segmentation/linefit_ground_segmentation/include/**",
+        "/home/rise/catkin_ws/src/Mobile_System_Control/carla_ros_bridge/mobile_system_control/include/**",
+        "/home/rise/catkin_ws/src/ouster-ros/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-robotiq/robotiq_2f_gripper_action_server/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-robotiq/robotiq_2f_gripper_control/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-robotiq/robotiq_3f_gripper_articulated_gazebo_plugins/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-robotiq/robotiq_3f_gripper_control/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-robotiq/robotiq_ethercat/include/**",
+        "/home/rise/catkin_ws/src/driver/rise-robotiq/robotiq_ft_sensor/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_control/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_dashboard/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_data_resource_manager/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_devices/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_experiment/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_gps_manager/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_map/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_motion_planner/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_path_planner/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_perception/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_simul/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_slow_idx/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_state_estimation/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_strategy/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_tf2_broadcaster/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_vms/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/rr_waypoint_creator/include/**",
+        "/home/rise/catkin_ws/src/driver/serial/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/SORT-ros/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/ublox_f9p/ublox_gps/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/ublox_f9p/ublox_msgs/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/ublox_f9p/ublox_serialization/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/velodyne/velodyne_driver/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/velodyne/velodyne_laserscan/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/velodyne/velodyne_pcl/include/**",
+        "/home/rise/catkin_ws/src/ai_robot_racing/third_party/velodyne/velodyne_pointcloud/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

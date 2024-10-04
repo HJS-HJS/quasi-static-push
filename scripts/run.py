@@ -4,10 +4,10 @@ import numpy as np
 import pygame
 from sympy import Matrix, MatrixSymbol
 
-from utils.object_circle import ObjectCircle
-from utils.object_pusher import ObjectPusher
-from utils.object_slider import ObjectSlider
-from utils.param_function import ParamFunction
+from utils.diagram         import Diagram, Circle
+from utils.object_pusher   import ObjectPusher
+from utils.object_slider   import ObjectSlider
+from utils.param_function  import ParamFunction
 from utils.quasi_state_sim import QuasiStateSim
 
 from utils.color import COLOR
@@ -72,7 +72,7 @@ pusher_heading  = config["pusher"]["pusher_heading"]
 pusher_radius   = config["pusher"]["pusher_radius"]
 pusher_distance = config["pusher"]["pusher_distance"]
 pusher_position = config["pusher"]["pusher_position"]
-pusher_rotation = config["pusher"]["pusher_rotation"]
+pusher_rotation = np.deg2rad(config["pusher"]["pusher_rotation"])
 
 # Set pusher speed
 u_input = np.zeros(3)                            # Initialize pusher's speed set as zeros 
@@ -96,7 +96,7 @@ sliders = ObjectSlider()
 for i in range(len(slider_radius)):
     _q = np.array(slider_position[i])
     _v = np.array([0, 0, 0])
-    sliders.append(ObjectCircle(_q, _v, slider_radius[i], True))
+    sliders.append(Circle(_q, _v, slider_radius[i], None))
 
 ## Set pygame display settings
 pygame.init()                                       # Initialize pygame

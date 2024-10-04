@@ -1,7 +1,7 @@
 from sympy import Matrix, MatrixSymbol, zeros, rot_axis3, pi
 import numpy as np
 
-from utils.object_circle import ObjectCircle
+from utils.diagram import Diagram, Circle
 
 class ObjectPusher(object):
     '''
@@ -43,7 +43,7 @@ class ObjectPusher(object):
             _finger_v[0,:2] = m_v[0,:2] + _w.cross(m_q_rel[0,:] * _rot)[0,:2]
             _finger_v[0,2]  = m_v[0,2]
 
-            _obj = ObjectCircle(_finger_q, _finger_v, radius, False)
+            _obj = Circle(_finger_q, _finger_v, radius, self.q)
 
             self.pushers.append(_obj)
 

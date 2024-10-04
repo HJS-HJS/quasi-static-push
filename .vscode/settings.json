@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/rise/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/rise/Downloads/CARLA_shipping/CARLA/PythonAPI/carla/dist/carla-0.9.15-py3.8-linux-x86_64.egg",
+        "/home/rise/Downloads/CARLA_shipping/CARLA/PythonAPI/carla/"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/rise/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/rise/Downloads/CARLA_shipping/CARLA/PythonAPI/carla/dist/carla-0.9.15-py3.8-linux-x86_64.egg",
+        "/home/rise/Downloads/CARLA_shipping/CARLA/PythonAPI/carla/"
+    ]
+}

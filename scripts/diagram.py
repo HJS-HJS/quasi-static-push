@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from sympy import symbols, Matrix, Abs, cos, sin, simplify, sqrt, ones
+from sympy import symbols, Matrix, Abs, cos, sin, ones
 
 
 class Diagram():
