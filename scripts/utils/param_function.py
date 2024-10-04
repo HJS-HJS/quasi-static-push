@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from sympy import Matrix, MatrixSymbol, zeros, sqrt, simplify, rot_axis3
+from sympy import Matrix, MatrixSymbol, zeros, sqrt, simplify
 
 class ParamFunction(object):
     '''
@@ -49,8 +49,11 @@ class ParamFunction(object):
         self.m_vp = Matrix(self.sym_vp)
         self.m_rp = Matrix(self.sym_rp)
 
-        self.m_qp_p = self.pushers.m_q_set
-        self.m_vp_p = self.pushers.m_v_set
+        self.m_qp_p = zeros(len(self.pushers), 3)
+        self.m_vp_p = zeros(len(self.pushers), 3)
+        for idx, pusher in enumerate(self.pushers):
+            self.m_qp_p[idx,:] = pusher.q
+            self.m_vp_p[idx,:] = pusher.v
 
         self.m_v = Matrix([self.m_vs.col_join(self.m_vp)[:]])
 
@@ -81,7 +84,7 @@ class ParamFunction(object):
                 self.m_vc[i,:] = point_vel3 - point_vel1
                 i += 1
 
-        self.m_vc_jac = self.m_vc.reshape(1,n_phi * 2).jacobian(self.m_v)
+        self.m_vc_jac = self.m_vc.reshape(1, n_phi * 2).jacobian(self.m_v)
 
         if self.simplify:
             self.m_phi    = simplify(self.m_phi)

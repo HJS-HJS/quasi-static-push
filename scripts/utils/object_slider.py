@@ -1,5 +1,4 @@
 import numpy as np
-from utils.object_circle import ObjectCircle
 
 class ObjectSlider(object):
     '''

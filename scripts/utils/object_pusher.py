@@ -1,7 +1,7 @@
-from sympy import Matrix, MatrixSymbol, zeros, sqrt, simplify, symbols, rot_axis3, pi
+from sympy import Matrix, MatrixSymbol, zeros, rot_axis3, pi
 import numpy as np
+
 from utils.object_circle import ObjectCircle
-from utils.diagram import *
 
 class ObjectPusher(object):
     '''
@@ -12,15 +12,12 @@ class ObjectPusher(object):
 
         self.q = np.array([center_x, center_y, rotation])
         self.v = np.array([0, 0, 0])
-
-        self.m_q_set = zeros(n_finger, 3)
-        self.m_v_set = zeros(n_finger, 3)
+        self.radius = radius
 
         self.sym_q  = MatrixSymbol('qp_', 1, 3)
         self.sym_v  = MatrixSymbol('vp_', 1, 3)
         m_q         = Matrix(self.sym_q)
         m_v         = Matrix(self.sym_v)
-        self.radius = radius
         _rot = rot_axis3(m_q[0,2])
 
         _w = Matrix([[0, 0, m_v[2]]])
@@ -49,11 +46,6 @@ class ObjectPusher(object):
             _obj = ObjectCircle(_finger_q, _finger_v, radius, False)
 
             self.pushers.append(_obj)
-            self.m_q_set[i,:] = _finger_q
-            self.m_v_set[i,:] = _finger_v
-
-        self.m_q_set = simplify(self.m_q_set)
-        self.m_v_set = simplify(self.m_v_set)
 
     def __len__(self): return len(self.pushers)
     
@@ -63,17 +55,11 @@ class ObjectPusher(object):
         for pusher in self.pushers:
             yield pusher
 
-    def apply_c(self, center):
-        self.q[:2] = center
-
-    def apply_rot(self, rotation):
-        self.q[2] = rotation
+    def apply_q(self, q):
+        self.q = np.array(q)
 
     def apply_v(self, velocity):
         self.v = np.array(velocity)
-
-    def move_q(self, dq):
-        self.q += dq
 
     @property
     def r(self):
@@ -86,5 +72,3 @@ class ObjectPusher(object):
     @property
     def rot(self):
         return self.q[2]
-
-    
