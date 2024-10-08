@@ -14,69 +14,175 @@ class Diagram(object):
         self.q = 0
         self.v = 0
         self.parent_q = 0
+        self.dt = 0.1
 
-        self.r = ones(1)[0] * 0
-
-        self.sym_t = symbols('t', real=True)
-
-        self.m_fun = Matrix([
-            0,
-            0
-        ])
-
-    def initialize(self, q):
+    def initialize(self):
         self.polygon = None
         self.init_angle = None
         self.torch_points = None
-        self.gen_torch_pts()
-        self.m_fun[0,0] += q[0]
-        self.m_fun[1,0] += q[1]
-        self.m_grad = self.m_fun.diff(self.sym_t)
+        _q = self.q
+        self.q = np.array([0, 0, 0])
+        self.gen_torch_points()
+        self.q = _q
               
-    def gen_torch_pts(self):
-        t = np.linspace(0, np.pi * 2, 100)
-        self.torch_points = torch.tensor(np.array([self.m_fun.subs({self.sym_t: t_i}) for t_i in t]).astype(np.float64).T.reshape(2, -1), device=device, dtype=torch.float32).T
+    def func_radius(self, theta):
+        return 1
+    def func_radius_d(self, theta):
+        return 0
 
-    def point(self, q, angle):
-        return np.array(self.m_fun.subs({self.sym_t: angle, MatrixSymbol('qp_', 1, 3):Matrix(q.reshape(1,3))})).astype(np.float64).T.reshape(2, -1)
+    def func_diagram(self, theta):
+        _r = self.func_radius(theta = theta - self.q[2])
+        return np.array([
+            self.q[0] + _r*np.cos(theta),
+            self.q[1] + _r*np.sin(theta)
+        ])
+    
+    def func_gradient(self, theta):
+        _r = self.func_radius(theta = theta - self.q[2])
+        _dr = self.func_radius_d(theta = theta - self.q[2])
+        return np.array([
+            - _r*np.sin(theta) + _dr * np.cos(theta),
+            + _r*np.cos(theta) + _dr * np.sin(theta)
+        ])
 
-    def points(self, q):
-        t = np.linspace(0, np.pi * 2, 100)
-        return np.array([self.m_fun.subs({self.sym_t: t_i, MatrixSymbol('qp_', 1, 3):Matrix(q.reshape(1,3))}) for t_i in t]).astype(np.float64).T.reshape(2, -1)
+    def points(self, npts:int=300, tmin:float=0, trange:float=2*np.pi):
+        theta = np.linspace(tmin, tmin + trange, npts, endpoint=False)
+        return self.func_diagram(theta)
+        
+    def point(self, theta):
+        return self.func_diagram(theta)
+    
+    def gen_torch_points(self, npts:int=1000, tmin:float=0, trange:float=2*np.pi):
+        self.torch_points = torch.tensor(self.points(npts, tmin, trange), device=device, dtype=torch.float32).T
 
-    def tangent_vector(self, angle):
-        _vec = np.array(self.m_grad.subs({self.sym_t: angle - self.phi})).astype(np.float64).reshape(-1)
+    def tangent_vector(self, theta):
+        _vec = self.func_gradient(theta)
         return _vec / np.linalg.norm(_vec)
     
-    def normal_vector(self, angle):
-        _vec = self.tangent_vector(angle)
+    def normal_vector(self, theta):
+        _vec = self.tangent_vector(theta)
         return np.array([_vec[1], -_vec[0]])
+
+    def local_velocity(self, theta):
+        return self.v[:2] + self.v[2]*self.func_radius(theta=theta)*self.tangent_vector(theta=theta)
+    
+    def local_velocity_grad(self, theta, dt):
+        _v = np.tile(self.v,3).reshape(3,-1) + np.eye(3)*dt
+        return _v[:,:2] + np.outer(_v[:,2], self.func_radius(theta=theta)*self.tangent_vector(theta=theta)) - self.v[:2]
 
     def surface(self, center):
         rotated_triangle = pygamerotate(self.polygon, int(np.rad2deg(center[2] - self.init_angle)))
         polygon_rect = rotated_triangle.get_rect(center=(center[0], center[1]))
         return rotated_triangle, polygon_rect.topleft
     
-class Circle(Diagram):
-    def __init__(self, q, v, radius, parents_q = None):
-        self.radius = radius
-        self.q = q
-        self.v = v
-        self.phi = 0
+    def collision_angle(self, diagram2: "Diagram"):
 
-        if parents_q is None:
-            q = MatrixSymbol('qp_', 1, 3)
-            self.parent_q = self.q
+        def angle(v):
+            return np.arctan2(v[1], v[0])
+        
+        q1 = torch.tensor(self.q, device=device, dtype= torch.float32)
+        q2 = torch.tensor(diagram2.q, device=device, dtype= torch.float32)
+
+        rot_1 = torch.tensor([[torch.cos(q1[2]), -torch.sin(q1[2])],
+                              [torch.sin(q1[2]),  torch.cos(q1[2])]], device=device, dtype= torch.float32)
+        rot_2 = torch.tensor([[torch.cos(q2[2]), -torch.sin(q2[2])],
+                              [torch.sin(q2[2]),  torch.cos(q2[2])]], device=device, dtype= torch.float32)
+
+        torch_points_1 = self.torch_points @ rot_1.T
+        torch_points_2 = diagram2.torch_points @ rot_2.T + q2[:2] - q1[:2]
+        
+        diagram1_vector = torch_points_1[1:] - torch_points_1[:-1]  # (99, 2)
+        points_2_expanded = torch_points_2.unsqueeze(1)  # (10, 1, 2)
+        test_vectors = points_2_expanded - torch_points_1[:-1]  # (10, 99, 2)
+        cross_products = torch.sign((diagram1_vector.unsqueeze(0)[:, :, 0] * test_vectors[:, :, 1] - 
+                                     diagram1_vector.unsqueeze(0)[:, :, 1] * test_vectors[:, :, 0]))  # (10, 99)
+
+        is_overlap = torch.all(cross_products >= 0, dim=1)
+        if not torch.any(is_overlap):
+            distances = torch.cdist(torch_points_1, torch_points_2)
+
+            arg = torch.argmin(distances)
+    
+            return [
+                (torch.pi * 2 * (arg // len(distances)) / len(distances)).cpu().numpy() + self.q[2],
+                (torch.pi * 2 * (arg  % len(distances)) / len(distances)).cpu().numpy() + diagram2.q[2],
+                distances[arg // len(distances), arg % len(distances)].cpu().numpy()
+            ]
         else:
-            self.parent_q = parents_q
-            
-        self.r = ones(1)[0] * radius
-        
-        self.sym_t = symbols('t', real=True)
+            inside_points = torch_points_2[is_overlap]
 
-        self.m_fun = Matrix([
-            self.r*cos(self.sym_t + self.phi),
-            self.r*sin(self.sym_t + self.phi)
-        ])
+            distances = torch.cdist(torch_points_1, inside_points)
+            _min = torch.min(distances, dim=0)
+            diagram2_arg = torch.argmax(_min[0])
+            diagram1_arg = _min[1][diagram2_arg]
+
+            dist = _min[0][diagram2_arg]
+
+            return [
+                (torch.pi * 2 * (diagram1_arg) / len(distances)).cpu().numpy() + self.q[2],
+                angle((inside_points[diagram2_arg] + q1[:2]).cpu().numpy() - diagram2.q[:2]),
+                -(dist).cpu().numpy()
+            ]
         
-        self.initialize(q)
+class Circle(Diagram):
+    def __init__(self, q, v, radius):
+        self.q = np.array(q)
+        self.v = np.array(v)
+        self.radius = radius
+
+        self.initialize()
+
+    def func_radius(self, theta):
+        return self.radius
+
+class SuperEllipse(Diagram):
+    def __init__(self, q, v, a, b, n):
+        self.q = np.array(q)
+        self.v = np.array(v)
+        self.a = a
+        self.b = b
+        self.n = n
+        
+        self.initialize()
+
+    def func_radius(self, theta):
+        return (np.abs(np.cos(theta) / self.a)**self.n + np.abs(np.sin(theta) / self.b)**self.n)**(-1/self.n)
+    
+    def func_radius_d(self, theta):
+        cos_theta = np.cos(theta)
+        sin_theta = np.sin(theta)
+        
+        term1 = (np.abs(cos_theta / self.a) ** self.n)
+        term2 = (np.abs(sin_theta / self.b) ** self.n)
+        g_theta = term1 + term2
+        
+        dg_dtheta = -self.n * (np.abs(cos_theta / self.a) ** (self.n - 1)) * (sin_theta / self.a) + \
+                    self.n * (np.abs(sin_theta / self.b) ** (self.n - 1)) * (cos_theta / self.b)
+        
+        df_dtheta = -(1 / self.n) * g_theta ** (-1 / self.n - 1) * dg_dtheta
+        
+        return df_dtheta
+
+class Ellipse(Diagram):
+    def __init__(self, q, v, a, b):
+        self.q = np.array(q)
+        self.v = np.array(v)
+        self.a = a
+        self.b = b
+
+        self.initialize()
+
+    def func_radius(self, theta):
+        return ((np.cos(theta) / self.a)**2 + (np.sin(theta)**2 / self.b))**(-1/2)
+    
+    def func_radius_d(self, theta):
+        cos_theta = np.cos(theta)
+        sin_theta = np.sin(theta)
+        
+        g_theta = (cos_theta**2 / self.a**2) + (sin_theta**2 / self.b)
+        
+        dg_dtheta = -2 * (cos_theta * sin_theta / self.a**2) + 2 * (sin_theta * cos_theta / self.b)
+        
+        df_dtheta = -0.5 * g_theta ** (-3 / 2) * dg_dtheta
+        
+        return df_dtheta

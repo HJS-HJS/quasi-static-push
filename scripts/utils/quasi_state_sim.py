@@ -9,7 +9,8 @@ class QuasiStateSim(object):
         self.n_steps = n_steps
 
     def run(self, u_input, qs, qp, phi, JNS, JNP, JTS, JTP):
-
+        if len(phi) is 0:
+            return qs, qp + u_input
         n_c   = phi.shape[0] # number of contact pairs
         n_s   = JNS.shape[1] # number of slider q
         n_p   = JNP.shape[1] # number of pusher q

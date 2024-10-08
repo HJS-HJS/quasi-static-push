@@ -1,7 +1,6 @@
-from sympy import Matrix, MatrixSymbol, zeros, rot_axis3, pi
 import numpy as np
 
-from utils.diagram import Diagram, Circle
+from utils.diagram import Circle
 
 class ObjectPusher(object):
     '''
@@ -14,38 +13,23 @@ class ObjectPusher(object):
         self.v = np.array([0, 0, 0])
         self.radius = radius
 
-        self.sym_q  = MatrixSymbol('qp_', 1, 3)
-        self.sym_v  = MatrixSymbol('vp_', 1, 3)
-        m_q         = Matrix(self.sym_q)
-        m_v         = Matrix(self.sym_v)
-        _rot = rot_axis3(m_q[0,2])
-
-        _w = Matrix([[0, 0, m_v[2]]])
+        self.m_q_rel = np.zeros((n_finger, 3))
 
         for i in range(n_finger):
             _rel1 = distance * np.cos(2 * np.pi / n_finger * i + heading)
             _rel2 = distance * np.sin(2 * np.pi / n_finger * i + heading)
 
-            if np.abs(_rel1) < 1e-10: _rel1 = 0
-            if np.abs(_rel2) < 1e-10: _rel2 = 0
-
-            m_q_rel = Matrix([[_rel1,
-                        _rel2,
-                        2 * pi / n_finger * i,
-                        ]])
+            self.m_q_rel[i,:] = np.array([[_rel1,
+                                           _rel2,
+                                           2 * np.pi / n_finger * i,
+                                           ]])
             
-            _finger_q = zeros(1, 3)
-            _finger_v = zeros(1, 3)
-
-            _finger_q[0,:2] = m_q[0,:2] + m_q_rel[0,:2] * _rot[:2,:2]
-            _finger_q[0,2]  = m_q[0,2] + m_q_rel[0,2]
-
-            _finger_v[0,:2] = m_v[0,:2] + _w.cross(m_q_rel[0,:] * _rot)[0,:2]
-            _finger_v[0,2]  = m_v[0,2]
-
-            _obj = Circle(_finger_q, _finger_v, radius, self.q)
+            _obj = Circle(np.zeros(3), np.zeros(3), radius)
 
             self.pushers.append(_obj)
+        
+        self.apply_q(self.q)
+        self.apply_v(self.v)
 
     def __len__(self): return len(self.pushers)
     
@@ -57,9 +41,19 @@ class ObjectPusher(object):
 
     def apply_q(self, q):
         self.q = np.array(q)
+        _rot = self.rot_matrix
+        for idx, pusher in enumerate(self.pushers):
+            pusher.q[:2] = self.q[:2] + self.m_q_rel[idx,:2].dot(_rot)
+            pusher.q[2]  = self.q[2] + self.m_q_rel[idx,2]
 
     def apply_v(self, velocity):
         self.v = np.array(velocity)
+        _rot = np.eye(3)
+        _rot[:2,:2] = self.rot_matrix
+        _w = np.array([0, 0, self.v[2]])
+        for idx, pusher in enumerate(self.pushers):
+            pusher.v[:2] = self.v[:2] + np.cross(_w, self.m_q_rel[idx,:].dot(_rot))[:2]
+            pusher.v[2]  = self.v[2]
 
     @property
     def r(self):
@@ -72,3 +66,10 @@ class ObjectPusher(object):
     @property
     def rot(self):
         return self.q[2]
+    
+    @property
+    def rot_matrix(self):
+        return np.array([
+            [np.cos(self.q[2]),  np.sin(self.q[2])],
+            [np.sin(self.q[2]), -np.cos(self.q[2])],
+        ])
