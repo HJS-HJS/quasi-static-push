@@ -38,8 +38,8 @@ def create_polygon_surface(points, color):
     polygon_surface = pygame.Surface((width, height), pygame.SRCALPHA)
     # Draw
     pygame.draw.polygon(polygon_surface, color, _points.astype(int).tolist())                               # Draw polygon
-    pygame.draw.line(polygon_surface, LIGHTGRAY, (width / 4, height / 2), (width * 3 / 4, height / 2), 1)   # Draw horizontal line
-    pygame.draw.line(polygon_surface, LIGHTGRAY, (width / 2, height / 4), (width / 2, height * 3 / 4), 1)   # Draw vertical line
+    pygame.draw.line(polygon_surface, LIGHTGRAY, (width / 4, height / 2), (width * 3 / 4, height / 2), 3)   # Draw horizontal line
+    pygame.draw.line(polygon_surface, LIGHTGRAY, (width / 2, height / 4), (width / 2, height * 3 / 4), 3)   # Draw vertical line
 
     return polygon_surface
 
@@ -79,9 +79,7 @@ unit_v_speed = config["pusher"]["unit_v_speed"]  # [m/s]
 unit_r_speed = config["pusher"]["unit_r_speed"]  # [rad/s]
 
 # Set objects
-slider_circle  = config["slider"]["circle"]
-slider_ellipse = config["slider"]["ellipse"]
-slider_superel = config["slider"]["superellipse"]
+slider_diagram = config["sliders"]
 
 # Set simulate param
 fps = config["simulator"]["fps"]           # Get simulator fps from config.yaml
@@ -93,9 +91,10 @@ sim_step = config["simulator"]["sim_step"] # Maximun LCP solver step
 pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
 # Generate sliders
 sliders = ObjectSlider()
-for slider in slider_circle:  sliders.append(Circle(slider[0], slider[1], slider[2]))
-for slider in slider_ellipse: sliders.append(Ellipse(slider[0], slider[1], slider[2], slider[3]))
-for slider in slider_superel: sliders.append(SuperEllipse(slider[0], slider[1], slider[2], slider[3], slider[4]))
+for slider in slider_diagram:
+    if slider["type"] == "circle":       sliders.append(Circle(slider['q'], slider['r']))
+    if slider["type"] == "ellipse":      sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
+    if slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
 
 ## Set pygame display settings
 pygame.init()                                       # Initialize pygame
@@ -110,7 +109,7 @@ for pusher in pushers:
 # Generate pygame sliders surface
 for slider in sliders:
     slider.polygon = create_polygon_surface(slider.points(), BLUE)
-    slider.init_angle = pusher.q[2]
+    slider.init_angle = slider.q[2]
 
 # Quasi-static simulation class
 param = ParamFunction(sliders, pushers)  # Generate parameter functions

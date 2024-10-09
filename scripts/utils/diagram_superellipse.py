@@ -35,7 +35,6 @@ class Diagram():
         self.polygon = None
         self.init_angle = None
         self.torch_points = None
-        self.torch_normal = None
         self.q = np.zeros(3)
         self.q[0] = self.x
         self.q[1] = self.y
@@ -56,7 +55,6 @@ class Diagram():
         self.phi = 0
         
         self.torch_points = torch.tensor(self.get_ellipse_pts(npts, tmin, trange), device=device, dtype=torch.float32).T
-        self.torch_normal = torch.tensor(self.normal_vector(np.linspace(tmin, tmin + trange, npts)), device=device, dtype=torch.float32).T
         self.x = x_
         self.y = y_
         self.phi = phi_
@@ -132,10 +130,9 @@ class Diagram():
             distances = torch.cdist(torch_points_1, torch_points_2)
 
             arg = torch.argmin(distances)
-    
             return [
-                (torch.pi * 2 * (arg // len(distances)) / len(distances)).cpu().numpy() + diagram1.phi,
-                (torch.pi * 2 * (arg  % len(distances)) / len(distances)).cpu().numpy() + diagram2.phi,
+                angle(torch_points_1[arg // len(distances)].cpu().numpy()),
+                angle((torch_points_2[arg % len(distances)] - q2[:2] + q1[:2]).cpu().numpy()),
                 distances[arg // len(distances), arg % len(distances)].cpu().numpy()
             ]
         else:
@@ -149,8 +146,8 @@ class Diagram():
             dist = _min[0][diagram2_arg]
 
             return [
-                (torch.pi * 2 * (diagram1_arg) / len(distances)).cpu().numpy() + diagram1.phi,
-                angle((inside_points[diagram2_arg] + q1[:2]).cpu().numpy() - diagram2.q[:2]),
+                angle(torch_points_1[diagram1_arg].cpu().numpy()),
+                angle((inside_points[diagram2_arg] - q2[:2] + q1[:2]).cpu().numpy()),
                 -(dist).cpu().numpy()
             ]
 
@@ -207,16 +204,20 @@ class SuperEllipse(Diagram):
         
         df_dtheta = -(1 / self.n) * g_theta ** (-1 / self.n - 1) * dg_dtheta
         
-        return df_dtheta
+        return df_dtheta * np.sign(theta)
+        # return df_dtheta
 
     def func_diagram(self, theta):
         _r = self.func_radius(theta = theta - self.phi)
-        return [
+        return np.array([
             self.x + _r*np.cos(theta),
             self.y + _r*np.sin(theta)
-        ]
+        ])
     
     def func_gradient(self, theta):
+        _point1 = self.get_ellipse_pt(theta)
+        _point2 = self.get_ellipse_pt(theta+0.0001)
+        return (_point2 - _point1)
         _r = self.func_radius(theta = theta - self.phi)
         _dr = self.func_radius_d(theta = theta - self.phi)
         return [
@@ -265,7 +266,8 @@ class Ellipse(Diagram):
         ]
 
 
-def plot_sol(sol, ellipse1, ellipse2):
+def plot_sol(ellipse1, ellipse2):
+    sol = Diagram.collision_dist(ellipse1, ellipse2)
     p_ellipse1_2 = ellipse1.get_ellipse_pt(sol[0])
     p_ellipse2_1 = ellipse2.get_ellipse_pt(sol[1])
     _vec1 = ellipse1.normal_vector(sol[0]) / 30
@@ -273,103 +275,116 @@ def plot_sol(sol, ellipse1, ellipse2):
     plt.plot([p_ellipse1_2[0], p_ellipse1_2[0] + _vec1[0]], [p_ellipse1_2[1], p_ellipse1_2[1] + _vec1[1]], label="normal line 1")
     plt.plot([p_ellipse2_1[0], p_ellipse2_1[0] + _vec2[0]], [p_ellipse2_1[1], p_ellipse2_1[1] + _vec2[1]], label="normal line 2")
 
+def plot_sol_print(ellipse1: Diagram, ellipse2: Diagram):
+    sol = Diagram.collision_dist(ellipse1, ellipse2)
+    p_ellipse1_2 = ellipse1.get_ellipse_pt(sol[0])
+    p_ellipse2_1 = ellipse2.get_ellipse_pt(sol[1])
+    print('solutions')
+    print(np.rad2deg(sol[0]))
+    print(np.rad2deg(sol[1]))
+    _vec1 = ellipse1.normal_vector(sol[0]) / 30
+    _vec2 = ellipse2.normal_vector(sol[1]) / 30
+
+    _r = ellipse2.func_radius(-sol[1])
+    _dr = ellipse2.func_radius_d(-sol[1])
+    print("")
+    print("sol")
+    print("grad:\t", ellipse2.func_gradient(sol[1]))
+    print("rad:\t", ellipse2.func_radius(sol[1]))
+    print("drad:\t", ellipse2.func_radius_d(sol[1]))
+    print("")
+    print("-sol")
+    print("grad:\t", ellipse2.func_gradient(-sol[1]))
+    print("rad:\t", ellipse2.func_radius(-sol[1]))
+    print("drad:\t", ellipse2.func_radius_d(-sol[1]))
+    print("rad:\t", ellipse2.func_radius(np.pi-sol[1]))
+    print("drad:\t", ellipse2.func_radius_d(np.pi-sol[1]))
+    print("rad:\t", ellipse2.func_radius(-np.pi+sol[1]))
+    print("drad:\t", ellipse2.func_radius_d(-np.pi+sol[1]))
+
+    print('test')
+    print(_r*np.sin(sol[1]))
+    print(_dr * np.cos(sol[1]))
+    print(_r*np.cos(sol[1]))
+    print(_dr * np.sin(sol[1]))
+
+    print('test minus')
+    print(_r*np.sin(-sol[1]))
+    print(_dr * np.cos(-sol[1]))
+    print(_r*np.cos(-sol[1]))
+    print(_dr * np.sin(-sol[1]))
+
+    plt.plot([p_ellipse1_2[0], p_ellipse1_2[0] + _vec1[0]], [p_ellipse1_2[1], p_ellipse1_2[1] + _vec1[1]], label="normal line 1")
+    plt.plot([p_ellipse2_1[0], p_ellipse2_1[0] + _vec2[0]], [p_ellipse2_1[1], p_ellipse2_1[1] + _vec2[1]], label="normal line 2")
+
+    p_ellipse2_1_minus = ellipse2.get_ellipse_pt(-sol[1])
+    _vec3 = ellipse2.normal_vector(-sol[1]) / 30
+    p_ellipse2_1_180 = ellipse2.get_ellipse_pt(np.pi - sol[1])
+    _vec4 = ellipse2.normal_vector(np.pi-sol[1]) / 30
+    p_ellipse2_1_m_180 = ellipse2.get_ellipse_pt(-np.pi + sol[1])
+    _vec5 = ellipse2.normal_vector(-np.pi+sol[1]) / 30
+    plt.plot([p_ellipse2_1_minus[0], p_ellipse2_1_minus[0] + _vec3[0]], [p_ellipse2_1_minus[1], p_ellipse2_1_minus[1] + _vec3[1]], label="normal line 3 minus")
+    plt.plot([p_ellipse2_1_180[0], p_ellipse2_1_180[0] + _vec4[0]], [p_ellipse2_1_180[1], p_ellipse2_1_180[1] + _vec4[1]], label="normal line 3 minus")
+    plt.plot([p_ellipse2_1_m_180[0], p_ellipse2_1_m_180[0] + _vec5[0]], [p_ellipse2_1_m_180[1], p_ellipse2_1_m_180[1] + _vec5[1]], label="normal line 3 minus")
+
+
+
+def plot_diagram(diagram):
+    points = diagram.get_ellipse_pts()
+    plt.plot(points[0], points[1], label="Skewed Circle")
+    plt.scatter(diagram.center[0], diagram.center[1])
+
+def plot_line(diagram1, diagram2):
+    plt.plot([diagram1.center[0], diagram2.center[0]], [diagram1.center[1], diagram2.center[1]], label="center line")
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import time
 
-    ellipse1 = SuperEllipse(1.0, 1.0, 0.5, 1.0, 20, np.pi / 6)
-    # ellipse2 = SuperEllipse(3.0, 3.0, 2.4, 1.2, 20, -np.pi / 18)
-    # ellipse2 = Ellipse(3.0, 3.0, 2.4, 1.2, -np.pi / 18)
-    ellipse2 = Circle(3.0, 3.0, 1.2, -np.pi / 18)
-    ellipse3 = Ellipse(6.5, 2.0, 3.0, 0.8, np.pi / 9)
-    ellipse4 = Ellipse(1.3, -0.6, 1.2, 0.2, -np.pi / 6)
-    ellipse5 = Circle(6.0, 0.7, 0.3, -np.pi / 18)
+    circle = Circle(1.0, 1.0, 1.2, -np.pi / 18)
+    ellipse1 = SuperEllipse(2.0, 2.0, 0.5, 1.0, 20, np.pi / 6 + np.pi)
+    ellipse2 = SuperEllipse(0.0, -1.0, 1.5, 0.3, 20, 0 + np.pi)
+    # ellipse2 = SuperEllipse(0.0, -1.0, 1.5, 0.3, 20, 0)
+    ellipse3 = SuperEllipse(-0.5, 0.0, 1.5, 0.3, 20, -np.pi / 4 + np.pi)
+    ellipse4 = SuperEllipse(0.8, -0.5, 0.5, 0.5, 20, np.pi / 9 + np.pi)
+    # ellipse1 = Ellipse(2.0, 2.0, 0.5, 1.0, 20, np.pi / 6 + np.pi)
+    # ellipse2 = Ellipse(0.0, -1.0, 1.5, 0.3, 20, 0 + np.pi)
+    # ellipse3 = Ellipse(-0.5, 0.0, 1.5, 0.3, 20, -np.pi / 4 + np.pi)
+    # ellipse4 = Ellipse(0.8, -0.5, 0.5, 0.5, 20, np.pi / 9 + np.pi)
 
 
     c_vector = ellipse1.center - ellipse2.center
     c_vector = c_vector / np.linalg.norm(c_vector)
     c_angle  = np.arctan2(c_vector[1], c_vector[0])
 
+    ps_circle = circle.get_ellipse_pts()
     ps_ellipse1 = ellipse1.get_ellipse_pts()
     ps_ellipse2 = ellipse2.get_ellipse_pts()
     ps_ellipse3 = ellipse3.get_ellipse_pts()
-    ps_ellipse4 = ellipse4.get_ellipse_pts()
-    ps_ellipse5 = ellipse5.get_ellipse_pts()
 
-    ellipse1.gen_torch_pts()
-    ellipse2.gen_torch_pts()
-    ellipse3.gen_torch_pts()
-
-    plt.figure(figsize=(6, 6))
-    plt.plot(ps_ellipse1[0], ps_ellipse1[1], label="Skewed Ellipse 1")
-    plt.plot(ps_ellipse2[0], ps_ellipse2[1], label="Skewed Ellipse 2")
-    plt.plot(ps_ellipse3[0], ps_ellipse3[1], label="Skewed Ellipse 3")
-    plt.plot(ps_ellipse4[0], ps_ellipse4[1], label="Skewed Ellipse 3")
-    plt.plot(ps_ellipse5[0], ps_ellipse5[1], label="Skewed Ellipse 3")
-    plt.scatter(ellipse1.center[0], ellipse1.center[1])
-    plt.scatter(ellipse2.center[0], ellipse2.center[1])
-    plt.scatter(ellipse3.center[0], ellipse3.center[1])
-
-    plt.plot([ellipse1.center[0], ellipse2.center[0]], [ellipse1.center[1], ellipse2.center[1]], label="center line")
+    # plt.figure(figsize=(6, 6))
+    plt.figure()
+    plot_diagram(circle)
+    plot_diagram(ellipse1)
+    plot_diagram(ellipse2)
+    plot_diagram(ellipse3)
+    plot_diagram(ellipse4)
     
-    
-    # now0 = time.time()
-    # sol = CollisionPoint(ellipse1, ellipse2).solve()
-    # print("solution:\t", sol)
-    # print("time:\t{:.10f}".format(time.time() - now0))
-    
-    # now = time.time()
-    # sol2 = CollisionPoint(ellipse1, ellipse3).solve()
-    # print("solution:\t", sol2)
-    # print("time:\t{:.10f}".format(time.time() - now))
-    
-    # now = time.time()
-    # sol3 = CollisionPoint(ellipse2, ellipse3).solve()
-    # print("solution:\t", sol3)
-    # print("time:\t{:.10f}".format(time.time() - now))
+    plot_sol(circle, ellipse1)
+    plot_sol_print(circle, ellipse2)
+    plot_sol(circle, ellipse3)
+    plot_sol(circle, ellipse4)
 
-    now = time.time()
-    sol4 = Diagram.collision_angle(ellipse1, ellipse2)
-    print("solution4:\t", sol4)
-    print("time:\t{:.10f}".format(time.time() - now))
 
-    now = time.time()
-    sol4 = Diagram.collision_angle(ellipse1, ellipse2)
-    print("solution4:\t", sol4)
-    print("time:\t{:.10f}".format(time.time() - now))
+    # plt.scatter(ellipse1.get_ellipse_pt(sol7[0])[0], ellipse1.get_ellipse_pt(sol7[0])[1], label="temp line test")
+    # plt.scatter(ellipse4.get_ellipse_pt(sol7[1])[0], ellipse4.get_ellipse_pt(sol7[1])[1], label="temp line test")
+    # plt.scatter(ellipse3.get_ellipse_pt(sol9[0])[0], ellipse3.get_ellipse_pt(sol9[0])[1], label="temp line test")
+    # plt.scatter(ellipse5.get_ellipse_pt(sol9[1])[0], ellipse5.get_ellipse_pt(sol9[1])[1], label="temp line test")
 
-    now = time.time()
-    sol5 = Diagram.collision_angle(ellipse1, ellipse3)
-    print("solution4:\t", sol5)
-    print("time:\t{:.10f}".format(time.time() - now))
-
-    now = time.time()
-    sol6 = Diagram.collision_angle(ellipse2, ellipse3)
-    print("solution4:\t", sol6)
-    print("time:\t{:.10f}".format(time.time() - now))
-
-    now = time.time()
-    sol7 = Diagram.collision_dist(ellipse1, ellipse4)
-    print("solution7:\t", sol7)
-    print("time:\t{:.10f}".format(time.time() - now))
-    now = time.time()
-    sol8 = Diagram.collision_dist(ellipse3, ellipse4)
-    print("solution8:\t", sol8)
-    print("time:\t{:.10f}".format(time.time() - now))
-    now = time.time()
-    sol9 = Diagram.collision_dist(ellipse3, ellipse5)
-    print("solution9:\t", np.rad2deg(sol9[0:2]), sol9[2])
-    print("time:\t{:.10f}".format(time.time() - now))
-
-    plt.scatter(ellipse1.get_ellipse_pt(sol7[0])[0], ellipse1.get_ellipse_pt(sol7[0])[1], label="temp line test")
-    plt.scatter(ellipse4.get_ellipse_pt(sol7[1])[0], ellipse4.get_ellipse_pt(sol7[1])[1], label="temp line test")
-    plt.scatter(ellipse3.get_ellipse_pt(sol9[0])[0], ellipse3.get_ellipse_pt(sol9[0])[1], label="temp line test")
-    plt.scatter(ellipse5.get_ellipse_pt(sol9[1])[0], ellipse5.get_ellipse_pt(sol9[1])[1], label="temp line test")
-
-    plot_sol(sol4, ellipse1, ellipse2)
-    plot_sol(sol5, ellipse1, ellipse3)
-    plot_sol(sol6, ellipse2, ellipse3)
+    # plot_sol(sol4, ellipse1, ellipse2)
+    # plot_sol(sol5, ellipse1, ellipse3)
+    # plot_sol(sol6, ellipse2, ellipse3)
 
     plt.gca().set_aspect('equal')
     plt.grid(True)

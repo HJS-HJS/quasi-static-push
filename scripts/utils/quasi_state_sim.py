@@ -1,5 +1,6 @@
 import numpy as np
 from utils.lcp_solver import LCPSolver
+# import quantecon as qe
 
 class QuasiStateSim(object):
     '''
@@ -20,9 +21,12 @@ class QuasiStateSim(object):
             n_contac = n_c,
             n_slider = n_s,
             n_pusher = n_p,
+            # fmscale  = 0.8,
+            # fascale  = 5000, 
+            # fbscale  = 0.01,
             fmscale  = 0.8,
-            fascale  = 5000, 
-            fbscale  = 0.01,
+            fascale  = 5,
+            fbscale  = 0.1,
             )
 
         E = np.repeat(np.eye(n_c), 2, axis=0)
@@ -49,6 +53,7 @@ class QuasiStateSim(object):
                         maxIter = self.n_steps
                         ).solve()
 
+        # sol =qe.optimize.lcp_lemke(M,w)
         # print(sol)
         if sol[0] is None:
             print('[0] Solver failed: ', sol)
@@ -57,15 +62,18 @@ class QuasiStateSim(object):
         if np.max(A.dot(JS.T.dot(sol[0][:l]))) > 0.035:
             print('[1] Solver jump: ', sol)
             print(A.dot(JS.T.dot(sol[0][:l])))
-
             return qs, qp + u_input
+        
         _qs = qs + A.dot(JS.T.dot(sol[0][:l]))
         _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + u_input
 
         return _qs, _qp
     
     def sim_matrix(self, n_contac, n_slider, n_pusher, fmscale, fascale, fbscale):
-        _mu = np.eye(n_contac)* fmscale
-        _A = np.eye(n_slider) * fascale
-        _B = np.eye(n_pusher) * fbscale
+        _mu = np.eye(n_contac) * fmscale
+        _A  = np.eye(n_slider) * fascale
+        _B  = np.eye(n_pusher) * fbscale
+        _A[0,0] /= 10
+        _A[1,1] /= 10
+        _A[2,2] *= 1
         return _mu, _A, _B

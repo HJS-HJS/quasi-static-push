@@ -25,24 +25,25 @@ class ParamFunction(object):
         # Initialize matrix
         self.phi    = np.zeros(self.n_phi)
         self.nhat   = np.zeros((self.n_phi, 2))
-        self.vc         = np.zeros((self.n_phi, 2))
-        self.vc_jac = np.zeros((self.n_phi * 2,   len(self.v)))
-        self.JN   = np.zeros((self.n_phi,     len(self.q)))
-        self.JT   = np.zeros((2 * self.n_phi, len(self.q)))
+        self.vc     = np.zeros((self.n_phi, 2))
+        self.vc_jac = np.zeros((self.n_phi * 2, len(self.v)))
+        self.JN     = np.zeros((self.n_phi,     len(self.q)))
+        self.JT     = np.zeros((2 * self.n_phi, len(self.q)))
         
         _dt = 0.0001
 
+        pusher_dv = self.pushers.pusher_dv(_dt)
+
         i = 0
-        i_p = len(self.sliders)
+        n_slider = len(self.sliders)
         for i_s, slider in enumerate(self.sliders):
-            for pusher in self.pushers:
+            for i_p, pusher in enumerate(self.pushers):
                 ans = slider.collision_angle(pusher)
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = slider.normal_vector(ans[0])
-                # self.vc[i,:]       = pusher.local_velocity(ans[1]) - slider.local_velocity(ans[0])
-                self.vc_jac[2*i:2*i+2,3*i_s:3*i_s+3] = -slider.local_velocity_grad(ans[0], _dt).T / _dt
-                self.vc_jac[2*i:2*i+2,3*i_p:3*i_p+3] =  pusher.local_velocity_grad(ans[1], _dt).T / _dt
+                self.vc_jac[2*i:2*i+2,3*i_s:3*i_s+3] =           -slider.local_velocity_grad(ans[0], _dt).T / _dt
+                self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+3] =  pusher.local_velocity_grad(ans[1], _dt, pusher_dv[i_p]).T / _dt
                 i += 1
         
         for i_s1 in range(len(self.sliders)):
@@ -51,7 +52,6 @@ class ParamFunction(object):
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = self.sliders[i_s1].normal_vector(ans[0])
-                # self.vc[i,:]       = self.sliders[i_s2].local_velocity(ans[1]) - self.sliders[i_s1].local_velocity(ans[0])
                 self.vc_jac[2*i:2*i+2,3*i_s1:3*i_s1+3] = -self.sliders[i_s1].local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*i_s2:3*i_s2+3] =  self.sliders[i_s2].local_velocity_grad(ans[1], _dt).T / _dt
                 i += 1
@@ -59,13 +59,13 @@ class ParamFunction(object):
         _rot = np.array([[0, -1], [1, 0]])
         for i in range(self.n_phi):
             self.JN[i,:]       =  self.nhat[i,:].dot(self.vc_jac[2*i:2*i+2,:])
-            self.JT[2*i,:]     =  (_rot.dot(self.nhat[i,:])).dot(self.vc_jac[i*2:i*2+2,:])
-            self.JT[2*i + 1,:] = -(_rot.dot(self.nhat[i,:])).dot(self.vc_jac[i*2:i*2+2,:])
+            self.JT[2*i,:]     = -(_rot.dot(self.nhat[i,:])).dot(self.vc_jac[2*i:2*i+2,:])
+            self.JT[2*i + 1,:] =  (_rot.dot(self.nhat[i,:])).dot(self.vc_jac[2*i:2*i+2,:])
 
-        self.JNS = self.JN[:,:len(self.sliders.v)]
-        self.JNP = self.JN[:,len(self.sliders.v):]
-        self.JTS = self.JT[:,:len(self.sliders.v)]
-        self.JTP = self.JT[:,len(self.sliders.v):]
+        self.JNS = self.JN[:,:3 * n_slider]
+        self.JNP = self.JN[:,3 * n_slider:]
+        self.JTS = self.JT[:,:3 * n_slider]
+        self.JTP = self.JT[:,3 * n_slider:]
 
     @property
     def q(self):

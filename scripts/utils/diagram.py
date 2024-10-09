@@ -12,11 +12,11 @@ class Diagram(object):
     def __init__(self):
         self.radius = 0
         self.q = 0
-        self.v = 0
         self.parent_q = 0
         self.dt = 0.1
 
     def initialize(self):
+        self.v = np.zeros(3)
         self.polygon = None
         self.init_angle = None
         self.torch_points = None
@@ -38,6 +38,7 @@ class Diagram(object):
         ])
     
     def func_gradient(self, theta):
+        return self.func_diagram(theta + 0.0001) - self.func_diagram(theta)
         _r = self.func_radius(theta = theta - self.q[2])
         _dr = self.func_radius_d(theta = theta - self.q[2])
         return np.array([
@@ -45,13 +46,13 @@ class Diagram(object):
             + _r*np.cos(theta) + _dr * np.sin(theta)
         ])
 
-    def points(self, npts:int=300, tmin:float=0, trange:float=2*np.pi):
-        theta = np.linspace(tmin, tmin + trange, npts, endpoint=False)
-        return self.func_diagram(theta)
-        
     def point(self, theta):
         return self.func_diagram(theta)
     
+    def points(self, npts:int=300, tmin:float=0, trange:float=2*np.pi):
+        theta = np.linspace(tmin, tmin + trange, npts, endpoint=False)
+        return self.func_diagram(theta)
+
     def gen_torch_points(self, npts:int=1000, tmin:float=0, trange:float=2*np.pi):
         self.torch_points = torch.tensor(self.points(npts, tmin, trange), device=device, dtype=torch.float32).T
 
@@ -66,9 +67,11 @@ class Diagram(object):
     def local_velocity(self, theta):
         return self.v[:2] + self.v[2]*self.func_radius(theta=theta)*self.tangent_vector(theta=theta)
     
-    def local_velocity_grad(self, theta, dt):
-        _v = np.tile(self.v,3).reshape(3,-1) + np.eye(3)*dt
-        return _v[:,:2] + np.outer(_v[:,2], self.func_radius(theta=theta)*self.tangent_vector(theta=theta)) - self.v[:2]
+    def local_velocity_grad(self, theta, dt, dv = None):
+        if dv is None:
+            # dv = np.tile(self.v,len(_v)).reshape(len(_v),-1) + np.eye(3) * dt
+            dv = np.eye(3) * dt
+        return dv[:,:2] + np.outer(dv[:,2], self.func_radius(theta=theta)*self.tangent_vector(theta=theta))
 
     def surface(self, center):
         rotated_triangle = pygamerotate(self.polygon, int(np.rad2deg(center[2] - self.init_angle)))
@@ -102,10 +105,9 @@ class Diagram(object):
             distances = torch.cdist(torch_points_1, torch_points_2)
 
             arg = torch.argmin(distances)
-    
             return [
-                (torch.pi * 2 * (arg // len(distances)) / len(distances)).cpu().numpy() + self.q[2],
-                (torch.pi * 2 * (arg  % len(distances)) / len(distances)).cpu().numpy() + diagram2.q[2],
+                angle(torch_points_1[arg // len(distances)].cpu().numpy()),
+                angle((torch_points_2[arg % len(distances)] - q2[:2] + q1[:2]).cpu().numpy()),
                 distances[arg // len(distances), arg % len(distances)].cpu().numpy()
             ]
         else:
@@ -119,26 +121,36 @@ class Diagram(object):
             dist = _min[0][diagram2_arg]
 
             return [
-                (torch.pi * 2 * (diagram1_arg) / len(distances)).cpu().numpy() + self.q[2],
-                angle((inside_points[diagram2_arg] + q1[:2]).cpu().numpy() - diagram2.q[:2]),
+                angle(torch_points_1[diagram1_arg].cpu().numpy()),
+                angle((inside_points[diagram2_arg] - q2[:2] + q1[:2]).cpu().numpy()),
                 -(dist).cpu().numpy()
             ]
-        
+    
+    @property
+    def limit_constant(self):
+        _constant = np.eye(3) * self.radius
+        _constant[2,2] /= 10
+        return _constant
+
 class Circle(Diagram):
-    def __init__(self, q, v, radius):
+    def __init__(self, q, radius):
         self.q = np.array(q)
-        self.v = np.array(v)
         self.radius = radius
 
         self.initialize()
 
     def func_radius(self, theta):
         return self.radius
+    
+    @property
+    def limit_constant(self):
+        _constant = np.eye(3) * self.radius
+        _constant[2,2] /= 10
+        return _constant
 
 class SuperEllipse(Diagram):
-    def __init__(self, q, v, a, b, n):
+    def __init__(self, q, a, b, n):
         self.q = np.array(q)
-        self.v = np.array(v)
         self.a = a
         self.b = b
         self.n = n
@@ -162,11 +174,16 @@ class SuperEllipse(Diagram):
         df_dtheta = -(1 / self.n) * g_theta ** (-1 / self.n - 1) * dg_dtheta
         
         return df_dtheta
+    
+    @property
+    def limit_constant(self):
+        _constant = np.eye(3) * self.radius
+        _constant[2,2] /= 10
+        return _constant
 
 class Ellipse(Diagram):
-    def __init__(self, q, v, a, b):
+    def __init__(self, q, a, b):
         self.q = np.array(q)
-        self.v = np.array(v)
         self.a = a
         self.b = b
 
@@ -186,3 +203,9 @@ class Ellipse(Diagram):
         df_dtheta = -0.5 * g_theta ** (-3 / 2) * dg_dtheta
         
         return df_dtheta
+    
+    @property
+    def limit_constant(self):
+        _constant = np.eye(3) * self.radius
+        _constant[2,2] /= 10
+        return _constant
