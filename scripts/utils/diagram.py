@@ -156,6 +156,10 @@ class Circle(Diagram):
 
     def func_radius(self, theta):
         return self.radius
+    
+    @property
+    def r(self):
+        return self.radius
 
 class SuperEllipse(Diagram):
     def __init__(self, q, a, b, n):
@@ -184,6 +188,10 @@ class SuperEllipse(Diagram):
         
         return df_dtheta
 
+    @property
+    def r(self):
+        return np.sqrt(np.power(self.a, 2) + np.power(self.b, 2))
+
 class Ellipse(Diagram):
     def __init__(self, q, a, b):
         self.q = np.array(q)
@@ -206,3 +214,7 @@ class Ellipse(Diagram):
         df_dtheta = -0.5 * g_theta ** (-3 / 2) * dg_dtheta
         
         return df_dtheta
+
+    @property
+    def r(self):
+        return np.sqrt(np.power(self.a, 2) + np.power(self.b, 2))

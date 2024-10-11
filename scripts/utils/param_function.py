@@ -39,27 +39,30 @@ class ParamFunction(object):
 
         pusher_dv = self.pushers.pusher_dv(_dt)
 
-        i = 0
+        i = -1
         n_slider = len(self.sliders)
+        # Near diagram check
         for i_s, slider in enumerate(self.sliders):
             for i_p, pusher in enumerate(self.pushers):
+                i += 1
+                if not self.is_collision_available(slider, pusher, self.threshold): continue
                 ans = slider.collision_angle(pusher)
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = slider.normal_vector(ans[0])
                 self.vc_jac[2*i:2*i+2,3*i_s:3*i_s+3] =           -slider.local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+3] =  pusher.local_velocity_grad(ans[1], _dt, pusher_dv[i_p]).T / _dt
-                i += 1
-        
+
         for i_s1 in range(len(self.sliders)):
             for i_s2 in range(i_s1 + 1, len(self.sliders)):
+                i += 1
+                if not self.is_collision_available(self.sliders[i_s1], self.sliders[i_s2], self.threshold): continue
                 ans = self.sliders[i_s1].collision_angle(self.sliders[i_s2])
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = self.sliders[i_s1].normal_vector(ans[0])
                 self.vc_jac[2*i:2*i+2,3*i_s1:3*i_s1+3] = -self.sliders[i_s1].local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*i_s2:3*i_s2+3] =  self.sliders[i_s2].local_velocity_grad(ans[1], _dt).T / _dt
-                i += 1
 
         _rot = np.array([[0, -1], [1, 0]])
         for i in range(self.n_phi):
@@ -112,6 +115,11 @@ class ParamFunction(object):
     def v(self):
         return np.hstack([self.sliders.v, self.pushers.v])
     
+    @staticmethod
+    def is_collision_available(diagram1, diagram2, threshold):
+        if (np.linalg.norm((diagram1.q - diagram2.q)[:2]) - diagram1.r - diagram2.r) < threshold: return True
+        return False
+
     @staticmethod
     def combination(n, r):
         if n < r:
