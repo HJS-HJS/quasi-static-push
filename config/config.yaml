@@ -20,7 +20,7 @@ pusher:
   pusher_rotation : 0
 
   # pusher_num      : 3
-  # pusher_heading  : 3.665182
+  # pusher_heading  : 210
   # pusher_radius   : 0.1
   # pusher_distance : 0.35
   # pusher_position : [0.0, -1.0]

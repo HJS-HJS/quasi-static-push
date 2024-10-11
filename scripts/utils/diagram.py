@@ -18,7 +18,6 @@ class Diagram(object):
     def initialize(self):
         self.v = np.zeros(3)
         self.polygon = None
-        self.init_angle = None
         self.torch_points = None
         self.limit_constant = None
         _q = self.q
@@ -77,7 +76,7 @@ class Diagram(object):
         return dv[:,:2] + np.outer(dv[:,2], self.func_radius(theta=theta)*self.tangent_vector(theta=theta))
 
     def surface(self, center):
-        rotated_triangle = pygamerotate(self.polygon, int(np.rad2deg(center[2] - self.init_angle)))
+        rotated_triangle = pygamerotate(self.polygon, int(np.rad2deg(center[2])))
         polygon_rect = rotated_triangle.get_rect(center=(center[0], center[1]))
         return rotated_triangle, polygon_rect.topleft
     
