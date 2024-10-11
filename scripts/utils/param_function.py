@@ -1,11 +1,14 @@
 import math
 import numpy as np
+from utils.diagram import Diagram
+from utils.object_slider import ObjectSlider
+from utils.object_pusher import ObjectPusher
 
 class ParamFunction(object):
     '''
     Calculate objects param
     '''
-    def __init__(self, sliders, pushers, threshold:float = 1e-1):
+    def __init__(self, sliders:ObjectSlider, pushers:ObjectPusher, threshold:float = 1e-1):
         self.sliders   = sliders
         self.pushers   = pushers
         self.threshold = threshold
@@ -64,6 +67,7 @@ class ParamFunction(object):
                 self.vc_jac[2*i:2*i+2,3*i_s1:3*i_s1+3] = -self.sliders[i_s1].local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*i_s2:3*i_s2+3] =  self.sliders[i_s2].local_velocity_grad(ans[1], _dt).T / _dt
 
+        # Update jacobian
         _rot = np.array([[0, -1], [1, 0]])
         for i in range(self.n_phi):
             self.JN[i,:]       =  self.nhat[i,:].dot(self.vc_jac[2*i:2*i+2,:])
@@ -100,28 +104,28 @@ class ParamFunction(object):
                self.B
     
     @property
-    def q(self):
+    def q(self) -> np.array:
         return np.hstack([self.sliders.q, self.pushers.q])
 
     @property
-    def qs(self):
+    def qs(self) -> np.array:
         return self.sliders.q.reshape(-1)
     
     @property
-    def qp(self):
+    def qp(self) -> np.array:
         return self.pushers.q
     
     @property
-    def v(self):
+    def v(self) -> np.array:
         return np.hstack([self.sliders.v, self.pushers.v])
     
     @staticmethod
-    def is_collision_available(diagram1, diagram2, threshold):
+    def is_collision_available(diagram1:Diagram, diagram2:Diagram, threshold:float) -> bool:
         if (np.linalg.norm((diagram1.q - diagram2.q)[:2]) - diagram1.r - diagram2.r) < threshold: return True
         return False
 
     @staticmethod
-    def combination(n, r):
+    def combination(n:int, r:int) -> int:
         if n < r:
             return 0
         else:

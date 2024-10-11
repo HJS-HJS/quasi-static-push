@@ -6,14 +6,15 @@ class QuasiStateSim(object):
     '''
     Quasi-state simulator
     '''
-    def __init__(self, n_steps):
+    def __init__(self, n_steps:int = 100):
         self.n_steps = n_steps
 
     def run(self, u_input, qs, qp, phi, JNS, JNP, JTS, JTP, mu, A, B, perfect_u_control:bool=True):
-        if len(phi) is 0:
-            return qs, qp + u_input
-        n_c   = phi.shape[0] # number of contact pairs
-        l = n_c * 3
+        
+        if len(phi) is 0: return qs, qp + u_input
+
+        n_c = phi.shape[0] # number of contact pairs
+        l   = n_c * 3
 
         E = np.repeat(np.eye(n_c), 2, axis=0)
         
@@ -47,13 +48,12 @@ class QuasiStateSim(object):
             print('[0] Solver failed: ', sol)
             return qs, qp + u_input
 
-        if np.max(A.dot(JS.T.dot(sol[0][:l]))) > 0.035:
+        if np.max(A.dot(JS.T.dot(sol[0][:l]))) > 0.05:
             print('[1] Solver jump: ', sol)
             print(A.dot(JS.T.dot(sol[0][:l])))
             return qs, qp + u_input
         
         _qs = qs + A.dot(JS.T.dot(sol[0][:l]))
-        # _qp = qp + B.dot(JP.T.dot(sol[0][:l])) + u_input
         _qp = qp + u_input
         if not perfect_u_control: _qp += B.dot(JP.T.dot(sol[0][:l]))
 

@@ -1,4 +1,3 @@
-from sympy import MatrixSymbol, symbols, ones, Matrix, cos, sin
 from pygame.transform import rotate as pygamerotate
 import numpy as np
 import torch
@@ -10,10 +9,9 @@ class Diagram(object):
     2d object
     '''
     def __init__(self):
-        self.radius = 0
-        self.q = 0
-        self.parent_q = 0
-        self.dt = 0.1
+        self.radius:float = 0
+        self.q:np.array = 0
+        self.dt:float = 0.1
 
     def initialize(self):
         self.v = np.zeros(3)
