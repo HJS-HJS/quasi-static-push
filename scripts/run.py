@@ -3,7 +3,7 @@ import yaml
 import numpy as np
 import pygame
 
-from utils.diagram         import Circle, Ellipse, SuperEllipse
+from utils.diagram         import Circle, Ellipse, SuperEllipse, RegularPolygon
 from utils.object_pusher   import ObjectPusher
 from utils.object_slider   import ObjectSlider
 from utils.param_function  import ParamFunction
@@ -22,15 +22,18 @@ def create_background_surface():
     return background_surface
 
 def create_polygon_surface(points, color):
-    # Convert polygon points coordinate to pygame display coordinate
+    # Convert polygon points coordinate to pygame display coordinate\
     _points = points.T / unit
-    _points[:,0] = ( 1.0 * _points[:,0] + display_center[0])
-    _points[:,1] = (-1.0 * _points[:,1] + display_center[1])
-    _points[:,0] -= np.min(_points[:,0])
-    _points[:,1] -= np.min(_points[:,1])
+
+    w_l = np.abs(np.min(_points[:,0])) if np.abs(np.min(_points[:,0])) > np.max(_points[:,0]) else np.max(_points[:,0])
+    h_l = np.abs(np.min(_points[:,1])) if np.abs(np.min(_points[:,1])) > np.max(_points[:,1]) else np.max(_points[:,1])
+
+    _points[:,0] =  1.0 * _points[:,0] + w_l
+    _points[:,1] = -1.0 * _points[:,1] + h_l
+
     # Set pygame surface size
-    width = np.max([p[0] for p in _points]) - np.min([p[0] for p in _points])
-    height = np.max([p[1] for p in _points]) - np.min([p[1] for p in _points])
+    width  = w_l * 2
+    height = h_l * 2
     # Generate pygame surface
     polygon_surface = pygame.Surface((width, height), pygame.SRCALPHA)
     # Draw
@@ -99,9 +102,10 @@ pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_headin
 # Generate sliders
 sliders = ObjectSlider()
 for slider in slider_diagram:
-    if slider["type"] == "circle":       sliders.append(Circle(slider['q'], slider['r']))
-    if slider["type"] == "ellipse":      sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
-    if slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
+    if slider["type"] == "circle":         sliders.append(Circle(slider['q'], slider['r']))
+    if slider["type"] == "ellipse":        sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
+    if slider["type"] == "superellipse":   sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
+    if slider["type"] == "regularpolygon": sliders.append(RegularPolygon(slider['q'], slider['a'], slider['k']))
 
 ## Set pygame display settings
 # Initialize pygame

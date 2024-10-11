@@ -225,6 +225,24 @@ class Ellipse(Diagram):
         
         return df_dtheta
 
+class RegularPolygon(Diagram):
+    def __init__(self, q, a, k:int):
+        self.q:np.array = np.array(q)
+        self.a:float = a
+        self.b:float = a / k / 5
+        self.k:float = k
+
+        # Value for checking collision availability
+        self.r = self.a + self.b
+
+        self.initialize()
+
+    def func_radius(self, theta:np.array) -> np.array:
+        return self.a + self.b * np.cos(self.k * theta)
+    
+    def func_radius_d(self, theta:np.array) -> np.array:
+        return - self.k * self.b * np.sin(self.k * theta)
+    
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -247,12 +265,18 @@ if __name__ == '__main__':
         plt.plot([p_ellipse2_1[0], p_ellipse2_1[0] + _vec2[0]], [p_ellipse2_1[1], p_ellipse2_1[1] + _vec2[1]], label="normal line 2")
 
     diagram_set = []
-    diagram_set.append(Circle([1.0, 1.0, -np.pi / 18], 1.2))
-    diagram_set.append(Circle([0.0, 2.0, np.pi / 2], 0.3))
-    diagram_set.append(SuperEllipse([2.0, 2.0, np.pi / 9], 1.0, 1.0, 20))
-    diagram_set.append(SuperEllipse([-0.2, -0.5, np.pi + np.pi/9], 0.2, 1.0, 20))
-    diagram_set.append(Ellipse([0.8, -0.5, 0], 0.3, 0.5))
-    diagram_set.append(Ellipse([2.3, -1.0, -np.pi/4], 0.7, 0.5))
+    # diagram_set.append(Circle([1.0, 1.0, -np.pi / 18], 1.2))
+    # diagram_set.append(Circle([0.0, 2.0, np.pi / 2], 0.3))
+    # diagram_set.append(SuperEllipse([2.0, 2.0, np.pi / 9], 1.0, 1.0, 20))
+    # diagram_set.append(SuperEllipse([-0.2, -0.5, np.pi + np.pi/9], 0.2, 1.0, 20))
+    # diagram_set.append(Ellipse([0.8, -0.5, 0], 0.3, 0.5))
+    # diagram_set.append(Ellipse([2.3, -1.0, -np.pi/4], 0.7, 0.5))
+    # diagram_set.append(RegularPolygon([-1, -1, 0], 0.6, 3))
+    diagram_set.append(RegularPolygon([0, 0, 0], 0.6, 3))
+    diagram_set.append(RegularPolygon([1, 1, np.pi/9], 0.7, 3))
+    diagram_set.append(RegularPolygon([-1, 1, np.pi/4], 0.6, 3))
+    diagram_set.append(RegularPolygon([-1, -1, np.pi + np.pi/4], 0.6, 3))
+    diagram_set.append(RegularPolygon([0.7, -0.7, np.pi + np.pi/4], 0.6, 3))
 
     plt.figure()
     for idx_1 in range(len(diagram_set)):
