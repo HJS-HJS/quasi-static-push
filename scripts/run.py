@@ -3,7 +3,7 @@ import yaml
 import numpy as np
 import pygame
 
-from utils.diagram         import Circle, Ellipse, SuperEllipse, RegularPolygon
+from utils.diagram         import Circle, Ellipse, SuperEllipse, RPolygon, SmoothRPolygon
 from utils.object_pusher   import ObjectPusher
 from utils.object_slider   import ObjectSlider
 from utils.param_function  import ParamFunction
@@ -16,9 +16,14 @@ def create_background_surface():
     background_surface = pygame.Surface((WIDTH, HEIGHT))    # Generate pygame surface with specific size
     background_surface.fill(WHITE)                          # Fill surface as white
     # Draw gridlines
-    gap = 1 / unit  # Guideline lengh
+    # 0.2m spacing
+    gap = 1 / unit / 5  # Guideline lengh
     for y_idx in range(int(HEIGHT / gap)): pygame.draw.line(background_surface, LIGHTGRAY, (0, y_idx * gap), (WIDTH, y_idx * gap), 2)  # horizontal gridlines
     for x_idx in range(int(WIDTH  / gap)): pygame.draw.line(background_surface, LIGHTGRAY, (x_idx * gap, 0), (x_idx * gap, HEIGHT), 2) # vertical gridlines
+    # 1m spacing
+    gap = 1 / unit      # Guideline lengh
+    for y_idx in range(int(HEIGHT / gap)): pygame.draw.line(background_surface, DARKGRAY, (0, y_idx * gap), (WIDTH, y_idx * gap), 2)   # horizontal gridlines
+    for x_idx in range(int(WIDTH  / gap)): pygame.draw.line(background_surface, DARKGRAY, (x_idx * gap, 0), (x_idx * gap, HEIGHT), 2)  # vertical gridlines
     return background_surface
 
 def create_polygon_surface(points, color):
@@ -44,8 +49,12 @@ def create_polygon_surface(points, color):
 
 def step_time(step:int = 0, msg:str = ""):
     global timer
+    global iter_timer
     if step == 0:
         timer = time.time()
+        iter_timer = time.time()
+    elif step == -1:
+        print("Time spent:\t{:.10f}\n".format(time.time() - iter_timer))
     else:
         print('Step', step, ':\t{:.10f}'.format(time.time() - timer), '\t', msg)
         timer = time.time()
@@ -66,10 +75,12 @@ display_center = np.array([WIDTH/2, HEIGHT/2])                          # Get ce
 
 ## Set colors
 WHITE       = COLOR["WHITE"]
+BLACK       = COLOR["BLACK"]
 RED         = COLOR["RED"]
 GREEN       = COLOR["GREEN"]
 BLUE        = COLOR["BLUE"]
 LIGHTGRAY   = COLOR["LIGHTGRAY"]
+DARKGRAY    = COLOR["DARKGRAY"]
 
 ## Set parameters
 # Set pixel unit
@@ -102,10 +113,11 @@ pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_headin
 # Generate sliders
 sliders = ObjectSlider()
 for slider in slider_diagram:
-    if slider["type"] == "circle":         sliders.append(Circle(slider['q'], slider['r']))
-    if slider["type"] == "ellipse":        sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
-    if slider["type"] == "superellipse":   sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
-    if slider["type"] == "regularpolygon": sliders.append(RegularPolygon(slider['q'], slider['a'], slider['k']))
+    if slider["type"] == "circle":       sliders.append(Circle(slider['q'], slider['r']))
+    if slider["type"] == "ellipse":      sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
+    if slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
+    if slider["type"] == "rpolygon":     sliders.append(RPolygon(slider['q'], slider['a'], slider['k']))
+    if slider["type"] == "srpolygon":    sliders.append(SmoothRPolygon(slider['q'], slider['a'], slider['k']))
 
 ## Set pygame display settings
 # Initialize pygame
@@ -251,7 +263,7 @@ while True:
     # step time
     step_time(6, 'simulation tick timer')
     # Print spent time taken for one iter
-    print("\tTime spent:\t{:.10f}\n".format(time.time() - start_time))
+    step_time(-1, '')
 
 # Exit simulator
 pygame.quit()

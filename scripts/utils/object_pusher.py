@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.diagram import Diagram, Circle, SuperEllipse, Ellipse
+from utils.diagram import Diagram, Circle, SuperEllipse
 
 class ObjectPusher(object):
     '''
@@ -26,7 +26,7 @@ class ObjectPusher(object):
                                            ]])
             
             # _obj = Circle(np.zeros(3), radius)
-            _obj = SuperEllipse(np.zeros(3), 0.05, 0.1, 20)
+            _obj = SuperEllipse(np.zeros(3), 0.05, 0.1, 10)
 
             self.pushers.append(_obj)
         

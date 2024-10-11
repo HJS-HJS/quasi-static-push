@@ -39,7 +39,7 @@ class Diagram(object):
         return np.array([
             - _r*np.sin(theta) + _dr * np.cos(theta),
             + _r*np.cos(theta) + _dr * np.sin(theta)
-        ])
+        ])\
         # + np.random.rand(2) * 0.01
         # return self.func_diagram(theta + 0.0001) - self.func_diagram(theta)
 
@@ -143,7 +143,7 @@ class Diagram(object):
         # Full surface
         _A = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta
         # _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta + (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
-        _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
+        # _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
         # along the edge
         # _A = 2 * torch.sum(_r).cpu().numpy() * _dtheta
         _M = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta * 50
@@ -225,7 +225,7 @@ class Ellipse(Diagram):
         
         return df_dtheta
 
-class RegularPolygon(Diagram):
+class SmoothRPolygon(Diagram):
     def __init__(self, q, a, k:int):
         self.q:np.array = np.array(q)
         self.a:float = a
@@ -243,7 +243,26 @@ class RegularPolygon(Diagram):
     def func_radius_d(self, theta:np.array) -> np.array:
         return - self.k * self.b * np.sin(self.k * theta)
     
+class RPolygon(Diagram):
+    def __init__(self, q, a, k:int):
+        self.q:np.array = np.array(q)
+        self.a:float = a
+        self.n:float = k
 
+        # Value for checking collision availability
+        self.r = self.a
+
+        self.initialize()
+
+    def func_radius(self, theta:np.array) -> np.array:
+        return np.cos(np.pi/self.n) / np.cos(theta % (2 * np.pi / self.n) - np.pi / self.n) * self.a
+
+    
+    def func_radius_d(self, theta:np.array) -> np.array:
+        theta_mod = theta % (2 * np.pi / self.n) - np.pi / self.n
+
+        return self.a * np.cos(np.pi / self.n) * np.sin(theta_mod) / (np.cos(theta_mod) ** 2)
+    
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
@@ -271,12 +290,12 @@ if __name__ == '__main__':
     # diagram_set.append(SuperEllipse([-0.2, -0.5, np.pi + np.pi/9], 0.2, 1.0, 20))
     # diagram_set.append(Ellipse([0.8, -0.5, 0], 0.3, 0.5))
     # diagram_set.append(Ellipse([2.3, -1.0, -np.pi/4], 0.7, 0.5))
-    # diagram_set.append(RegularPolygon([-1, -1, 0], 0.6, 3))
-    diagram_set.append(RegularPolygon([0, 0, 0], 0.6, 3))
-    diagram_set.append(RegularPolygon([1, 1, np.pi/9], 0.7, 3))
-    diagram_set.append(RegularPolygon([-1, 1, np.pi/4], 0.6, 3))
-    diagram_set.append(RegularPolygon([-1, -1, np.pi + np.pi/4], 0.6, 3))
-    diagram_set.append(RegularPolygon([0.7, -0.7, np.pi + np.pi/4], 0.6, 3))
+    # diagram_set.append(RPolygon([-1, -1, 0], 0.6, 3))
+    diagram_set.append(RPolygon([0, 0, 0], 0.6, 3))
+    diagram_set.append(RPolygon([1, 1, np.pi/9], 0.7, 4))
+    diagram_set.append(RPolygon([-1, 1, np.pi/4], 0.6, 5))
+    diagram_set.append(RPolygon([-1, -1, np.pi + np.pi/4], 0.6, 6))
+    diagram_set.append(RPolygon([0.7, -0.7, np.pi + np.pi/4], 0.6, 7))
 
     plt.figure()
     for idx_1 in range(len(diagram_set)):

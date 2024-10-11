@@ -13,7 +13,7 @@ class ParamFunction(object):
         self.pushers   = pushers
         self.threshold = threshold
 
-        self.fmscale = 0.03
+        self.fmscale = 0.015
         self.fascale = 20
         self.fbscale = 1
 
