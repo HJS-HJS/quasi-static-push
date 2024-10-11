@@ -49,7 +49,7 @@ class ParamFunction(object):
             for i_p, pusher in enumerate(self.pushers):
                 i += 1
                 if not self.is_collision_available(slider, pusher, self.threshold): continue
-                ans = slider.collision_angle(pusher)
+                ans = slider.cal_collision_data(pusher)
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = slider.normal_vector(ans[0])
@@ -60,7 +60,7 @@ class ParamFunction(object):
             for i_s2 in range(i_s1 + 1, len(self.sliders)):
                 i += 1
                 if not self.is_collision_available(self.sliders[i_s1], self.sliders[i_s2], self.threshold): continue
-                ans = self.sliders[i_s1].collision_angle(self.sliders[i_s2])
+                ans = self.sliders[i_s1].cal_collision_data(self.sliders[i_s2])
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = self.sliders[i_s1].normal_vector(ans[0])
