@@ -39,7 +39,7 @@ class Diagram(object):
         return np.array([
             - _r*np.sin(theta) + _dr * np.cos(theta),
             + _r*np.cos(theta) + _dr * np.sin(theta)
-        ])\
+        ])
         # + np.random.rand(2) * 0.01
         # return self.func_diagram(theta + 0.0001) - self.func_diagram(theta)
 
