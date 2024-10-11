@@ -14,7 +14,6 @@ class ObjectPusher(object):
         self.radius = radius
 
         self.m_q_rel = np.zeros((n_finger, 3))
-
         for i in range(n_finger):
             _rel1 = distance * np.cos(2 * np.pi / n_finger * i + heading)
             _rel2 = distance * np.sin(2 * np.pi / n_finger * i + heading)
@@ -26,8 +25,8 @@ class ObjectPusher(object):
                                            (np.pi/2-np.pi/n_finger)*2 + 2 * np.pi * 2 / n_finger * i,
                                            ]])
             
-            _obj = Circle(np.zeros(3), radius)
-            # _obj = SuperEllipse(np.zeros(3), 0.05, 0.1, 20)
+            # _obj = Circle(np.zeros(3), radius)
+            _obj = SuperEllipse(np.zeros(3), 0.05, 0.1, 100)
 
             self.pushers.append(_obj)
         

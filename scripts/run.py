@@ -155,7 +155,7 @@ while running:
 
     print('\tstep2:\t{:.10f}'.format(time.time() - now1))
     now1 = time.time()
-    _qs, _qp, _phi, _JNS, _JNP, _JTS, _JTP = param.get_simulate_param()
+    _qs, _qp, _phi, _JNS, _JNP, _JTS, _JTP, _mu, _A, _B = param.get_simulate_param()
 
     print('\tstep3:\t{:.10f}'.format(time.time() - now1))
     now1 = time.time()
@@ -175,6 +175,9 @@ while running:
         JNP = _JNP,
         JTS = _JTS,
         JTP = _JTP,
+        mu  = _mu,
+        A   = _A,
+        B   = _B,
         )
 
     print('\tstep4:\t{:.10f}'.format(time.time() - now1))

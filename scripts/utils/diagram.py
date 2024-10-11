@@ -20,9 +20,11 @@ class Diagram(object):
         self.polygon = None
         self.init_angle = None
         self.torch_points = None
+        self.limit_constant = None
         _q = self.q
         self.q = np.array([0, 0, 0])
         self.gen_torch_points()
+        self.gen_limit_constant()
         self.q = _q
               
     def func_radius(self, theta):
@@ -38,13 +40,14 @@ class Diagram(object):
         ])
     
     def func_gradient(self, theta):
-        return self.func_diagram(theta + 0.0001) - self.func_diagram(theta)
         _r = self.func_radius(theta = theta - self.q[2])
         _dr = self.func_radius_d(theta = theta - self.q[2])
         return np.array([
             - _r*np.sin(theta) + _dr * np.cos(theta),
             + _r*np.cos(theta) + _dr * np.sin(theta)
         ])
+        # + np.random.rand(2) * 0.01
+        # return self.func_diagram(theta + 0.0001) - self.func_diagram(theta)
 
     def point(self, theta):
         return self.func_diagram(theta)
@@ -126,11 +129,23 @@ class Diagram(object):
                 -(dist).cpu().numpy()
             ]
     
-    @property
-    def limit_constant(self):
-        _constant = np.eye(3) * self.radius
-        _constant[2,2] /= 10
-        return _constant
+    def gen_limit_constant(self):
+        _npts = 1000
+        _dtheta = np.pi * 2 / _npts
+        _line = torch.linspace(start=0, end=2*torch.pi, steps = _npts, device=device)
+        _r = torch.norm(self.torch_points, dim=1)
+        # Full surface
+        _A = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta
+        # _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta + (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
+        _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
+        # along the edge
+        # _A = 2 * torch.sum(_r).cpu().numpy() * _dtheta
+        _M = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta * 50
+        self.limit_constant = np.array([
+            [_A, 0, 0],
+            [0, _A, 0],
+            [0, 0, _M],
+            ])
 
 class Circle(Diagram):
     def __init__(self, q, radius):
@@ -141,12 +156,6 @@ class Circle(Diagram):
 
     def func_radius(self, theta):
         return self.radius
-    
-    @property
-    def limit_constant(self):
-        _constant = np.eye(3) * self.radius
-        _constant[2,2] /= 10
-        return _constant
 
 class SuperEllipse(Diagram):
     def __init__(self, q, a, b, n):
@@ -166,20 +175,14 @@ class SuperEllipse(Diagram):
         
         term1 = (np.abs(cos_theta / self.a) ** self.n)
         term2 = (np.abs(sin_theta / self.b) ** self.n)
-        g_theta = term1 + term2
+        g_theta = (-1 / self.n) * (term1 + term2) ** (-1 / self.n - 1)
         
-        dg_dtheta = -self.n * (np.abs(cos_theta / self.a) ** (self.n - 1)) * (sin_theta / self.a) + \
-                    self.n * (np.abs(sin_theta / self.b) ** (self.n - 1)) * (cos_theta / self.b)
+        dg_dtheta = self.n * (np.abs(cos_theta / self.a) ** (self.n - 1)) * (-sin_theta / self.a) * np.sign(cos_theta) + \
+                    self.n * (np.abs(sin_theta / self.b) ** (self.n - 1)) * ( cos_theta / self.b) * np.sign(sin_theta)
         
-        df_dtheta = -(1 / self.n) * g_theta ** (-1 / self.n - 1) * dg_dtheta
+        df_dtheta = g_theta * dg_dtheta
         
         return df_dtheta
-    
-    @property
-    def limit_constant(self):
-        _constant = np.eye(3) * self.radius
-        _constant[2,2] /= 10
-        return _constant
 
 class Ellipse(Diagram):
     def __init__(self, q, a, b):
@@ -190,22 +193,16 @@ class Ellipse(Diagram):
         self.initialize()
 
     def func_radius(self, theta):
-        return ((np.cos(theta) / self.a)**2 + (np.sin(theta)**2 / self.b))**(-1/2)
+        return ((np.cos(theta) / self.a)**2 + (np.sin(theta) / self.b)**2)**(-1/2)
     
     def func_radius_d(self, theta):
         cos_theta = np.cos(theta)
         sin_theta = np.sin(theta)
         
-        g_theta = (cos_theta**2 / self.a**2) + (sin_theta**2 / self.b)
+        g_theta = (cos_theta / self.a)**2 + (sin_theta / self.b)**2
         
-        dg_dtheta = -2 * (cos_theta * sin_theta / self.a**2) + 2 * (sin_theta * cos_theta / self.b)
+        dg_dtheta = -2 * (cos_theta * sin_theta / self.a**2) + 2 * (sin_theta * cos_theta / self.b**2)
         
         df_dtheta = -0.5 * g_theta ** (-3 / 2) * dg_dtheta
         
         return df_dtheta
-    
-    @property
-    def limit_constant(self):
-        _constant = np.eye(3) * self.radius
-        _constant[2,2] /= 10
-        return _constant

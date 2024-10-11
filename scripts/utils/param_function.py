@@ -10,6 +10,10 @@ class ParamFunction(object):
         self.pushers   = pushers
         self.threshold = threshold
 
+        self.fmscale = 0.03
+        self.fascale = 20
+        self.fbscale = 1
+
         self.n_phi  = len(self.pushers) * len(self.sliders) + ParamFunction.combination(len(self.sliders), 2)
 
         self.phi    = np.zeros(self.n_phi)
@@ -30,6 +34,7 @@ class ParamFunction(object):
         self.JN     = np.zeros((self.n_phi,     len(self.q)))
         self.JT     = np.zeros((2 * self.n_phi, len(self.q)))
         
+        # delta t for vc jacobian
         _dt = 0.0001
 
         pusher_dv = self.pushers.pusher_dv(_dt)
@@ -67,6 +72,30 @@ class ParamFunction(object):
         self.JTS = self.JT[:,:3 * n_slider]
         self.JTP = self.JT[:,3 * n_slider:]
 
+        # sim matrix
+        self.mu = np.eye(self.n_phi) * self.fmscale
+        self.A  = np.zeros((3 * n_slider, 3 * n_slider))
+        self.B  = np.eye(len(self.pushers.q)) * self.fbscale
+        self.B[2,2] *= 0.01
+
+        for idx, slider in enumerate(self.sliders):
+            self.A[3*idx:3*idx + 3,3*idx:3*idx + 3] = slider.limit_constant * self.fascale
+
+    def get_simulate_param(self):
+        _thres_idx = np.where(self.phi < self.threshold / 5)
+        _thres_idx_twice = np.repeat(_thres_idx,2) * 2
+        _thres_idx_twice[::2] += 1
+        return self.qs, \
+               self.qp, \
+               self.phi[_thres_idx], \
+               self.JNS[_thres_idx], \
+               self.JNP[_thres_idx], \
+               self.JTS[_thres_idx_twice], \
+               self.JTP[_thres_idx_twice], \
+               self.mu[:len(_thres_idx[0]),:len(_thres_idx[0])],\
+               self.A,\
+               self.B
+    
     @property
     def q(self):
         return np.hstack([self.sliders.q, self.pushers.q])
@@ -82,19 +111,6 @@ class ParamFunction(object):
     @property
     def v(self):
         return np.hstack([self.sliders.v, self.pushers.v])
-
-    def get_simulate_param(self):
-        _thres_idx = np.where(self.phi < self.threshold)
-        _thres_idx_twice = np.repeat(_thres_idx,2) * 2
-        _thres_idx_twice[::2] += 1
-
-        return self.qs, \
-               self.qp, \
-               self.phi[_thres_idx], \
-               self.JNS[_thres_idx], \
-               self.JNP[_thres_idx], \
-               self.JTS[_thres_idx_twice], \
-               self.JTP[_thres_idx_twice]
     
     @staticmethod
     def combination(n, r):
