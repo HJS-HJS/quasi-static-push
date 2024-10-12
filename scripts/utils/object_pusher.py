@@ -1,34 +1,34 @@
+import copy
 import numpy as np
 
-from utils.diagram import Diagram, Circle, SuperEllipse
+from utils.diagram import Diagram, Circle, Ellipse, SuperEllipse, RPolygon, SmoothRPolygon
 
 class ObjectPusher(object):
     '''
     2d pusher
     '''
-    def __init__(self, n_finger:int=2, radius:float=1.0, distance:float=1.0, heading:float=0.0, center_x:float=0.0, center_y:float=0.0, rotation:float=0.0):
+    def __init__(self, n_finger:int=2, finger_angle:float = 180, type:dict={'type':"circle", 'r': 0.1}, distance:float=1.0, center_x:float=0.0, center_y:float=0.0, rotation:float=0.0):
         
         self.pushers:list[Diagram] = []
         self.q = np.array([center_x, center_y, rotation])
         self.v = np.array([0, 0, 0])
-        self.radius = radius
 
+        if type["type"]   == "circle":       _obj = Circle(np.zeros(3),         type['r'])
+        elif type["type"] == "ellipse":      _obj = Ellipse(np.zeros(3),        type['a'], type['b'])
+        elif type["type"] == "superellipse": _obj = SuperEllipse(np.zeros(3),   type['a'], type['b'], type['n'])
+        elif type["type"] == "rpolygon":     _obj = RPolygon(np.zeros(3),       type['a'], type['k'])
+        elif type["type"] == "srpolygon":    _obj = SmoothRPolygon(np.zeros(3), type['a'], type['k'])
+        
+        f_heading = (finger_angle - np.pi) / 2
         self.m_q_rel = np.zeros((n_finger, 3))
         for i in range(n_finger):
-            _rel1 = distance * np.cos(2 * np.pi / n_finger * i + heading)
-            _rel2 = distance * np.sin(2 * np.pi / n_finger * i + heading)
-
-            self.m_q_rel[i,:] = np.array([[_rel1,
-                                           _rel2,
-                                        #    2 * np.pi / n_finger * i + heading,
-                                        #    np.pi/6,
-                                           (np.pi/2-np.pi/n_finger)*2 + 2 * np.pi * 2 / n_finger * i,
-                                           ]])
+            self.m_q_rel[i,:] = np.array([[
+                distance * np.cos(-finger_angle * i + f_heading),
+                distance * np.sin(-finger_angle * i + f_heading),
+                -(finger_angle) / 2 - (np.pi - finger_angle) * i,
+                ]])
             
-            # _obj = Circle(np.zeros(3), radius)
-            _obj = SuperEllipse(np.zeros(3), 0.05, 0.1, 10)
-
-            self.pushers.append(_obj)
+            self.pushers.append(copy.deepcopy(_obj))
         
         self.apply_q(self.q)
         self.apply_v(self.v)

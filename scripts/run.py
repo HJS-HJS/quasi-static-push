@@ -88,8 +88,8 @@ unit = config["display"]["unit"] #[m/pixel]
 
 # Set pusher
 pusher_num      = config["pusher"]["pusher_num"]
-pusher_heading  = np.deg2rad(config["pusher"]["pusher_heading"])
-pusher_radius   = config["pusher"]["pusher_radius"]
+pusher_angle    = np.deg2rad(config["pusher"]["pusher_angle"])
+pusher_type     = config["pusher"]["pusher_type"]
 pusher_distance = config["pusher"]["pusher_distance"]
 pusher_position = config["pusher"]["pusher_position"]
 pusher_rotation = np.deg2rad(config["pusher"]["pusher_rotation"])
@@ -109,15 +109,15 @@ sim_step = config["simulator"]["sim_step"] # Maximun LCP solver step
 
 ## Generate objects
 # Generate pushers
-pushers = ObjectPusher(pusher_num, pusher_radius, pusher_distance, pusher_heading, pusher_position[0], pusher_position[1], pusher_rotation)
+pushers = ObjectPusher(pusher_num, pusher_angle, pusher_type, pusher_distance, pusher_position[0], pusher_position[1], pusher_rotation)
 # Generate sliders
 sliders = ObjectSlider()
 for slider in slider_diagram:
-    if slider["type"] == "circle":       sliders.append(Circle(slider['q'], slider['r']))
-    if slider["type"] == "ellipse":      sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
-    if slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
-    if slider["type"] == "rpolygon":     sliders.append(RPolygon(slider['q'], slider['a'], slider['k']))
-    if slider["type"] == "srpolygon":    sliders.append(SmoothRPolygon(slider['q'], slider['a'], slider['k']))
+    if slider["type"] == "circle":         sliders.append(Circle(slider['q'], slider['r']))
+    elif slider["type"] == "ellipse":      sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
+    elif slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
+    elif slider["type"] == "rpolygon":     sliders.append(RPolygon(slider['q'], slider['a'], slider['k']))
+    elif slider["type"] == "srpolygon":    sliders.append(SmoothRPolygon(slider['q'], slider['a'], slider['k']))
 
 ## Set pygame display settings
 # Initialize pygame

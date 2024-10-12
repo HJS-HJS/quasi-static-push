@@ -8,23 +8,18 @@ display:
   unit:   0.005 # [m/pixel]
 
 pusher:
-  pusher_num      : 2
-  pusher_heading  : 0
-  pusher_radius   : 0.1
-  pusher_distance : 0.25
-  # pusher_distance : 0.8
-  # pusher_distance : 1.0
-  pusher_position : [0.0, -1.0]
-  # pusher_position : [0.0, -0.5]
-  # pusher_position : [-1.0, -0.3]
-  pusher_rotation : 0
+  # pusher_num      : 2
+  # pusher_angle    : 180
+  # pusher_distance : 0.25
+  # pusher_type     : {"type": "circle", "r": 0.1}
 
-  # pusher_num      : 3
-  # pusher_heading  : 210
-  # pusher_radius   : 0.1
-  # pusher_distance : 0.35
-  # pusher_position : [0.0, -1.0]
-  # pusher_rotation : 0
+  pusher_num      : 2
+  pusher_angle    : 120
+  pusher_distance : 0.35
+  pusher_type     : {"type": "superellipse", "a": 0.05, "b": 0.1, "n": 10}
+
+  pusher_position : [0.0, -1.0]
+  pusher_rotation : 0
 
   unit_v_speed    : 0.8  # [m/s]
   unit_r_speed    : 0.6  # [rad/s]
