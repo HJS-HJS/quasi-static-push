@@ -13,7 +13,7 @@ class ObjectPusher(object):
         self.q = np.array([center_x, center_y, rotation])
         self.v = np.array([0, 0, 0])
 
-        if type["type"]   == "circle":       _obj = Circle(np.zeros(3),         type['r'])
+        if   type["type"] == "circle":       _obj = Circle(np.zeros(3),         type['r'])
         elif type["type"] == "ellipse":      _obj = Ellipse(np.zeros(3),        type['a'], type['b'])
         elif type["type"] == "superellipse": _obj = SuperEllipse(np.zeros(3),   type['a'], type['b'], type['n'])
         elif type["type"] == "rpolygon":     _obj = RPolygon(np.zeros(3),       type['a'], type['k'])

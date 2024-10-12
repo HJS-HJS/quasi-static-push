@@ -1,6 +1,5 @@
 import numpy as np
 from utils.lcp_solver import LCPSolver
-# import quantecon as qe
 
 class QuasiStateSim(object):
     '''
@@ -42,8 +41,6 @@ class QuasiStateSim(object):
                         maxIter = self.n_steps
                         ).solve()
 
-        # sol =qe.optimize.lcp_lemke(M,w)
-        # print(sol)
         if sol[0] is None:
             print('[0] Solver failed: ', sol)
             return qs, qp + u_input

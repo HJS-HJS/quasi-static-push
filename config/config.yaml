@@ -1,6 +1,6 @@
 simulator:
-  fps      : 120  # 60fps
-  sim_step : 100 # Maximun LCP solver step
+  fps      : 100  # 100fps
+  sim_step : 100  # Maximun LCP solver step
 
 display:
   WIDTH : 1600
@@ -18,7 +18,7 @@ pusher:
   pusher_distance : 0.35
   pusher_type     : {"type": "superellipse", "a": 0.05, "b": 0.1, "n": 10}
 
-  pusher_position : [0.0, -1.0]
+  pusher_position : [0.0, -1.2]
   pusher_rotation : 0
 
   unit_v_speed    : 0.8  # [m/s]
@@ -48,6 +48,7 @@ sliders:
     # {"type": "superellipse",    'q':[0.0, -1.25, 1.570796], "a": 0.6, "b": 0.1, "n": 50},
     # {"type": "superellipse",    'q':[0.0, -1.25, 1.570796], "a": 1.6, "b": 0.1, "n": 20},
     # {"type": "superellipse",    'q':[0.0, -0.5, 0.785398],  "a": 0.45, "b": 0.45, "n": 50},
+    # {"type": "superellipse",    'q':[0.0, -0.3, 0.6],       "a": 0.45, "b": 0.45, "n": 50},
     # {"type": "superellipse",    'q':[0.0, -0.5, 0],         "a": 0.5, "b": 0.45, "n": 20},
     # {"type": "ellipse",         'q':[0.0, -0.1, -0.7] ,     "a": 0.5, "b": 0.3},
     # {"type": "ellipse",         'q':[1.0, -1.0, -0.7] ,     "a": 0.6, "b": 0.1},

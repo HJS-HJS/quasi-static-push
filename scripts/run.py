@@ -113,7 +113,7 @@ pushers = ObjectPusher(pusher_num, pusher_angle, pusher_type, pusher_distance, p
 # Generate sliders
 sliders = ObjectSlider()
 for slider in slider_diagram:
-    if slider["type"] == "circle":         sliders.append(Circle(slider['q'], slider['r']))
+    if   slider["type"] == "circle":       sliders.append(Circle(slider['q'], slider['r']))
     elif slider["type"] == "ellipse":      sliders.append(Ellipse(slider['q'], slider['a'], slider['b']))
     elif slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
     elif slider["type"] == "rpolygon":     sliders.append(RPolygon(slider['q'], slider['a'], slider['k']))
@@ -210,6 +210,7 @@ while True:
         mu  = _mu,
         A   = _A,
         B   = _B,
+        perfect_u_control = False
         )
     # step time
     step_time(3, 'Run simulation')

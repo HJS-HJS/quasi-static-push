@@ -40,8 +40,6 @@ class Diagram(object):
             - _r*np.sin(theta) + _dr * np.cos(theta),
             + _r*np.cos(theta) + _dr * np.sin(theta)
         ])
-        # + np.random.rand(2) * 0.01
-        # return self.func_diagram(theta + 0.0001) - self.func_diagram(theta)
 
     def point(self, theta:np.array) -> np.array:
         return self.func_diagram(theta)
@@ -69,7 +67,6 @@ class Diagram(object):
     
     def local_velocity_grad(self, theta:np.array, dt:float = 0.001, dv:np.array = None) -> np.array:
         if dv is None:
-            # dv = np.tile(self.v,len(_v)).reshape(len(_v),-1) + np.eye(3) * dt
             dv = np.eye(3) * dt
         return dv[:,:2] + np.outer(dv[:,2], self.func_radius(theta=theta)*self.tangent_vector(theta=theta))
 
@@ -138,15 +135,15 @@ class Diagram(object):
     def gen_limit_constant(self):
         _npts = 1000
         _dtheta = np.pi * 2 / _npts
+        _thickness = 0.005
         _r = torch.norm(self.torch_points, dim=1)
 
         # Full surface
-        _A = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta
-        # _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta + (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
-        # _M = (2 / 9) * torch.sum(_r ** 3).cpu().numpy() * _dtheta
-        # along the edge
-        # _A = 2 * torch.sum(_r).cpu().numpy() * _dtheta
-        _M = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta * 50
+        # _A = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta
+        # _M = (1 / 2) * torch.sum(_r ** 2).cpu().numpy() * _dtheta * 50
+        # Along the edge
+        _A = (1 / 2) * torch.sum(2 * _thickness*_r - _thickness**2).cpu().numpy() * _dtheta
+        _M = torch.sum((1 / 3) * _r ** 3 - (_thickness / 4) * _r**2).cpu().numpy() * _dtheta
         self.limit_constant = np.array([
             [_A, 0, 0],
             [0, _A, 0],
@@ -284,18 +281,13 @@ if __name__ == '__main__':
         plt.plot([p_ellipse2_1[0], p_ellipse2_1[0] + _vec2[0]], [p_ellipse2_1[1], p_ellipse2_1[1] + _vec2[1]], label="normal line 2")
 
     diagram_set = []
-    # diagram_set.append(Circle([1.0, 1.0, -np.pi / 18], 1.2))
-    # diagram_set.append(Circle([0.0, 2.0, np.pi / 2], 0.3))
-    # diagram_set.append(SuperEllipse([2.0, 2.0, np.pi / 9], 1.0, 1.0, 20))
-    # diagram_set.append(SuperEllipse([-0.2, -0.5, np.pi + np.pi/9], 0.2, 1.0, 20))
-    # diagram_set.append(Ellipse([0.8, -0.5, 0], 0.3, 0.5))
-    # diagram_set.append(Ellipse([2.3, -1.0, -np.pi/4], 0.7, 0.5))
-    # diagram_set.append(RPolygon([-1, -1, 0], 0.6, 3))
-    diagram_set.append(RPolygon([0, 0, 0], 0.6, 3))
-    diagram_set.append(RPolygon([1, 1, np.pi/9], 0.7, 4))
-    diagram_set.append(RPolygon([-1, 1, np.pi/4], 0.6, 5))
-    diagram_set.append(RPolygon([-1, -1, np.pi + np.pi/4], 0.6, 6))
-    diagram_set.append(RPolygon([0.7, -0.7, np.pi + np.pi/4], 0.6, 7))
+    diagram_set.append(Circle([1.0, 1.0, -np.pi / 18], 1.2))
+    diagram_set.append(Circle([0.0, 2.0, np.pi / 2], 0.3))
+    diagram_set.append(SuperEllipse([2.0, 2.0, np.pi / 9], 1.0, 1.0, 20))
+    diagram_set.append(SuperEllipse([-0.2, -0.5, np.pi + np.pi/9], 0.2, 1.0, 20))
+    diagram_set.append(Ellipse([0.8, -0.5, 0], 0.3, 0.5))
+    diagram_set.append(Ellipse([2.3, -1.0, -np.pi/4], 0.7, 0.5))
+    diagram_set.append(RPolygon([-1, -1, 0], 0.6, 3))
 
     plt.figure()
     for idx_1 in range(len(diagram_set)):

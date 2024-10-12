@@ -13,9 +13,9 @@ class ParamFunction(object):
         self.pushers   = pushers
         self.threshold = threshold
 
-        self.fmscale = 0.015
-        self.fascale = 20
-        self.fbscale = 1
+        self.fmscale = 0.2
+        self.fascale = 0.9
+        self.fbscale = 0.001
 
         self.n_phi  = len(self.pushers) * len(self.sliders) + ParamFunction.combination(len(self.sliders), 2)
 
@@ -53,6 +53,7 @@ class ParamFunction(object):
                 # check collision distance
                 self.phi[i]    = ans[2]
                 self.nhat[i,:] = slider.normal_vector(ans[0])
+                # self.nhat[i,:] = -pusher.normal_vector(ans[1])
                 self.vc_jac[2*i:2*i+2,3*i_s:3*i_s+3] =           -slider.local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+3] =  pusher.local_velocity_grad(ans[1], _dt, pusher_dv[i_p]).T / _dt
 
