@@ -68,7 +68,7 @@ class Diagram(object):
     def local_velocity_grad(self, theta:np.array, dt:float = 0.001, dv:np.array = None) -> np.array:
         if dv is None:
             dv = np.eye(3) * dt
-        return dv[:,:2] + np.outer(dv[:,2], self.func_radius(theta=theta)*self.tangent_vector(theta=theta))
+        return dv[:,:2] + np.outer(dv[:,2], self.func_radius(theta=theta)*self.rot_vector(theta=theta+np.pi/2))
 
     def surface(self, center:np.array):
         rotated_triangle = pygamerotate(self.polygon, int(np.rad2deg(center[2])))
@@ -149,6 +149,11 @@ class Diagram(object):
             [0, _A, 0],
             [0, 0, _M],
             ])
+
+    def rot_vector(self, theta):
+        return np.array([
+            [np.cos(theta), np.sin(theta)],
+        ])
 
 class Circle(Diagram):
     def __init__(self, q, radius):
