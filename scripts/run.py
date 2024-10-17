@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 
 from utils.diagram         import Circle, Ellipse, SuperEllipse, RPolygon, SmoothRPolygon
+from utils.object_obstacle import ObjectObstacle
 from utils.object_pusher   import ObjectPusher
 from utils.object_slider   import ObjectSlider
 from utils.param_function  import ParamFunction
@@ -54,9 +55,9 @@ def step_time(step:int = 0, msg:str = ""):
         timer = time.time()
         iter_timer = time.time()
     elif step == -1:
-        print("Time spent:\t{:.10f}\n".format(time.time() - iter_timer))
+        print("Time spent [Hz]: {:.2f}".format(1 /(time.time() - iter_timer)))
     else:
-        print('Step', step, ':\t{:.10f}'.format(time.time() - timer), '\t', msg)
+        # print('Step', step, ':\t{:.10f}'.format(time.time() - timer), '\t', msg)
         timer = time.time()
 
 ###############################
@@ -79,6 +80,7 @@ BLACK       = COLOR["BLACK"]
 RED         = COLOR["RED"]
 GREEN       = COLOR["GREEN"]
 BLUE        = COLOR["BLUE"]
+YELLOW      = COLOR["YELLOW"],
 LIGHTGRAY   = COLOR["LIGHTGRAY"]
 DARKGRAY    = COLOR["DARKGRAY"]
 
@@ -102,10 +104,14 @@ unit_r_speed = config["pusher"]["unit_r_speed"]  # [rad/s]
 # Set sliders
 slider_diagram = config["sliders"]         # Get sliders property (type, pose, parameters)
 
+# Set obstacles
+obstacle_diagram = config["obstacles"]         # Get sliders property (type, pose, parameters)
+
 # Set simulate param
 fps = config["simulator"]["fps"]           # Get simulator fps from config.yaml
 frame = 1 / fps                            # 1 frame = 1/fps
 sim_step = config["simulator"]["sim_step"] # Maximun LCP solver step
+dist_threshold = float(config["simulator"]["dist_threshold"]) # Distance to decide whether to calculate parameters
 
 ## Generate objects
 # Generate pushers
@@ -118,6 +124,14 @@ for slider in slider_diagram:
     elif slider["type"] == "superellipse": sliders.append(SuperEllipse(slider['q'], slider['a'], slider['b'], slider['n']))
     elif slider["type"] == "rpolygon":     sliders.append(RPolygon(slider['q'], slider['a'], slider['k']))
     elif slider["type"] == "srpolygon":    sliders.append(SmoothRPolygon(slider['q'], slider['a'], slider['k']))
+# Generate Obstacles
+obstacles = ObjectObstacle()
+for obstacle in obstacle_diagram:
+    if   obstacle["type"] == "circle":       obstacles.append(Circle(obstacle['q'], obstacle['r']))
+    elif obstacle["type"] == "ellipse":      obstacles.append(Ellipse(obstacle['q'], obstacle['a'], obstacle['b']))
+    elif obstacle["type"] == "superellipse": obstacles.append(SuperEllipse(obstacle['q'], obstacle['a'], obstacle['b'], obstacle['n']))
+    elif obstacle["type"] == "rpolygon":     obstacles.append(RPolygon(obstacle['q'], obstacle['a'], obstacle['k']))
+    elif obstacle["type"] == "srpolygon":    obstacles.append(SmoothRPolygon(obstacle['q'], obstacle['a'], obstacle['k']))
 
 ## Set pygame display settings
 # Initialize pygame
@@ -127,12 +141,18 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))   # Set pygame display size
 clock = pygame.time.Clock()                         # Generate pygame clock for apply proper fps
 backgound = create_background_surface()             # Generate pygame background surface
 # Generate pygame object surfaces
-for pusher in pushers: pusher.polygon = create_polygon_surface(pusher.torch_points.cpu().numpy().T, RED)  # Generate pygame pushers surface
-for slider in sliders: slider.polygon = create_polygon_surface(slider.torch_points.cpu().numpy().T, BLUE) # Generate pygame sliders surface
+for pusher in pushers:   pusher.polygon = create_polygon_surface(pusher.torch_points.cpu().numpy().T, RED)  # Generate pygame pushers surface
+for slider in sliders:   slider.polygon = create_polygon_surface(slider.torch_points.cpu().numpy().T, BLUE) # Generate pygame sliders surface
+for obstac in obstacles: obstac.polygon = create_polygon_surface(obstac.torch_points.cpu().numpy().T, GREEN) # Generate pygame sliders surface
 
 # Quasi-static simulation class
-param     = ParamFunction(sliders, pushers)  # Generate parameter functions
-simulator = QuasiStateSim(sim_step)          # Generate quasi-static simulation class
+# Generate parameter functions
+param     = ParamFunction(sliders,
+                          pushers, 
+                          obstacles, 
+                          dist_threshold)
+# Generate quasi-static simulation class
+simulator = QuasiStateSim(sim_step)
 
 
 ###############################
@@ -246,6 +266,15 @@ while True:
     for slider in sliders:
         _center = slider.q
         _surface = slider.surface([
+            int(_center[0]/unit + display_center[0]), 
+            int(-_center[1]/unit + display_center[1]), 
+            _center[2]
+            ])
+        screen.blit(_surface[0], _surface[1])
+    # Bliting obstacles
+    for obs in obstacles:
+        _center = obs.q
+        _surface = obs.surface([
             int(_center[0]/unit + display_center[0]), 
             int(-_center[1]/unit + display_center[1]), 
             _center[2]

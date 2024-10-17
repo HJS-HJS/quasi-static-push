@@ -1,23 +1,27 @@
 import math
 import numpy as np
 from utils.diagram import Diagram
-from utils.object_slider import ObjectSlider
-from utils.object_pusher import ObjectPusher
+from utils.object_obstacle import ObjectObstacle
+from utils.object_slider   import ObjectSlider
+from utils.object_pusher   import ObjectPusher
 
 class ParamFunction(object):
     '''
     Calculate objects param
     '''
-    def __init__(self, sliders:ObjectSlider, pushers:ObjectPusher, threshold:float = 1e-1):
+    def __init__(self, sliders:ObjectSlider, pushers:ObjectPusher, obstacles:ObjectObstacle, threshold:float = 1e-1):
         self.sliders   = sliders
         self.pushers   = pushers
+        self.obstacles = obstacles
         self.threshold = threshold
 
         self.fmscale = 0.2
         self.fascale = 0.9
         self.fbscale = 0.001
 
-        self.n_phi  = len(self.pushers) * len(self.sliders) + ParamFunction.combination(len(self.sliders), 2)
+        self.n_phi  = len(self.pushers) * len(self.sliders)\
+              + ParamFunction.combination(len(self.sliders), 2)\
+              + (len(self.pushers) + len(self.sliders)) * len(self.obstacles)
 
         self.phi    = np.zeros(self.n_phi)
         self.nhat   = np.zeros((self.n_phi, 2))
@@ -44,10 +48,11 @@ class ParamFunction(object):
 
         i = -1
         n_slider = len(self.sliders)
-        # Near diagram check
+        # Parameter calculation between pusher and slider
         for i_s, slider in enumerate(self.sliders):
             for i_p, pusher in enumerate(self.pushers):
                 i += 1
+                # Near diagram check
                 if not self.is_collision_available(slider, pusher, self.threshold): continue
                 ans = slider.cal_collision_data(pusher)
                 # check collision distance
@@ -57,6 +62,7 @@ class ParamFunction(object):
                 self.vc_jac[2*i:2*i+2,3*i_s:3*i_s+3] =           -slider.local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+3] =  pusher.local_velocity_grad(ans[1], _dt, pusher_dv[i_p]).T / _dt
 
+        # Parameter calculation between sliders
         for i_s1 in range(len(self.sliders)):
             for i_s2 in range(i_s1 + 1, len(self.sliders)):
                 i += 1
@@ -67,6 +73,28 @@ class ParamFunction(object):
                 self.nhat[i,:] = self.sliders[i_s1].normal_vector(ans[0])
                 self.vc_jac[2*i:2*i+2,3*i_s1:3*i_s1+3] = -self.sliders[i_s1].local_velocity_grad(ans[0], _dt).T / _dt
                 self.vc_jac[2*i:2*i+2,3*i_s2:3*i_s2+3] =  self.sliders[i_s2].local_velocity_grad(ans[1], _dt).T / _dt
+
+        # Parameter calculation between slider and obstacle
+        for obs in self.obstacles:
+            for idx, diagram in enumerate(self.sliders):
+                i += 1
+                if not self.is_collision_available(diagram, obs, self.threshold): continue
+                ans = diagram.cal_collision_data(obs)
+                # check collision distance
+                self.phi[i]    = ans[2]
+                self.nhat[i,:] = diagram.normal_vector(ans[0])
+                self.vc_jac[2*i:2*i+2,3*idx:3*idx+3] = -diagram.local_velocity_grad(ans[0], _dt).T / _dt
+
+        # Parameter calculation between pusher and obstacle
+        for obs in self.obstacles:
+            for diagram in self.pushers:
+                i += 1
+                if not self.is_collision_available(diagram, obs, self.threshold): continue
+                ans = diagram.cal_collision_data(obs)
+                # check collision distance
+                self.phi[i]    = ans[2]
+                self.nhat[i,:] = diagram.normal_vector(ans[0])
+                self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+3] = -diagram.local_velocity_grad(ans[0], _dt).T / _dt
 
         # Update jacobian
         _rot = np.array([[0, -1], [1, 0]])

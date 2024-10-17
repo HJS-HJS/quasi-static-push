@@ -1,6 +1,7 @@
 simulator:
   fps      : 100  # 100fps
   sim_step : 100  # Maximun LCP solver step
+  dist_threshold: 1e-1 # Distance to decide whether to calculate parameters
 
 display:
   WIDTH : 1600
@@ -8,12 +9,12 @@ display:
   unit:   0.005 # [m/pixel]
 
 pusher:
-  # pusher_num      : 2
+  pusher_num      : 2
+
   # pusher_angle    : 180
   # pusher_distance : 0.25
   # pusher_type     : {"type": "circle", "r": 0.1}
 
-  pusher_num      : 2
   pusher_angle    : 120
   pusher_distance : 0.35
   pusher_type     : {"type": "superellipse", "a": 0.05, "b": 0.1, "n": 10}
@@ -27,50 +28,47 @@ pusher:
 
 sliders:
   [
-    ## Example
+    ## Format Example
     # {"type": "circle",          'q':[0.0, 0.0, 0.0], "r": 1.0}
     # {"type": "superellipse",    'q':[0.0, 0.0, 0.0], "a": 1.0, "b": 1.0, "n": 50},
     # {"type": "ellipse",         'q':[0.0, 0.0, 0.0], "a": 1.0, "b": 1.0},
     # {"type": "rpolygon",        'q':[0.0, 0.0, 0.0], "a": 1.0, "k": 3},
     # {"type": "srpolygon",       'q':[0.0, 0.0, 0.0], "a": 1.0, "k": 3},
 
-    ## Basic
-    # {"type": "circle",          'q':[0.0, -0.3, 0.0],  "r": 0.5},
-    # {"type": "circle",          'q':[0.0, 0.1, 0.0],   "r": 0.5},
-    # {"type": "circle",          'q':[0.0, 1.0, 0.0],   "r": 0.3},
-    # {"type": "circle",          'q':[1.5, 0.0, 0.0],   "r": 0.1},
-    # {"type": "circle",          'q':[1.0, 1.0, 0.0],   "r": 0.5},
-    # {"type": "circle",          'q':[-2.5, -1.0, 0.2], "r": 0.1},
-    # {"type": "circle",          'q':[-2.5, 1.5, 0.2],  "r": 0.2},
-    # {"type": "circle",          'q':[0.0, -1.8, 0.0],  "r": 0.5},
+    ## Basic Circle
+    {"type": "circle", 'q':[0.0, 0.1, 0.0],   "r": 0.5},
+    ## Basic Circles
+    # {"type": "circle", 'q':[0.0, 0.1, 0.0],   "r": 0.5}, {"type": "circle", 'q':[0.0, 1.0, 0.0],   "r": 0.3},
+    # {"type": "circle", 'q':[1.5, 0.0, 0.0],   "r": 0.1}, {"type": "circle", 'q':[1.0, 1.0, 0.0],   "r": 0.5},
+    # {"type": "circle", 'q':[-2.5, -1.0, 0.2], "r": 0.1}, {"type": "circle", 'q':[-2.5, 1.5, 0.2],  "r": 0.2},
+    # {"type": "circle", 'q':[-0.3, -1.8, 0.0], "r": 0.5},
 
-    ## Stick
-    # {"type": "superellipse",    'q':[0.0, -1.25, 1.570796], "a": 0.6, "b": 0.1, "n": 50},
-    # {"type": "superellipse",    'q':[0.0, -1.25, 1.570796], "a": 1.6, "b": 0.1, "n": 20},
-    # {"type": "superellipse",    'q':[0.0, -0.5, 0.785398],  "a": 0.45, "b": 0.45, "n": 50},
-    # {"type": "superellipse",    'q':[0.0, -0.3, 0.6],       "a": 0.45, "b": 0.45, "n": 50},
-    # {"type": "superellipse",    'q':[0.0, -0.5, 0],         "a": 0.5, "b": 0.45, "n": 20},
-    # {"type": "ellipse",         'q':[0.0, -0.1, -0.7] ,     "a": 0.5, "b": 0.3},
-    # {"type": "ellipse",         'q':[1.0, -1.0, -0.7] ,     "a": 0.6, "b": 0.1},
-    # {"type": "ellipse",         'q':[0.001, -1.0, -1.2] ,   "a": 0.65, "b": 0.3},
+    ## SuperEllipse test
+    # {"type": "superellipse", 'q':[0.0, -1.25, 1.570796], "a": 0.6, "b": 0.1, "n": 50},
+    # {"type": "superellipse", 'q':[0.0, -0.5, 0.785398],  "a": 0.45, "b": 0.45, "n": 50},
 
     ## Ellipse set
-    # {"type": "ellipse",         'q':[0.001, 0.7, -1.2] , "a": 0.65, "b": 0.3},
-    # {"type": "ellipse",         'q':[0.3, 1.5, 0.2] ,  "a": 0.4, "b": 0.3},
-    # {"type": "ellipse",         'q':[-1.2, 0.5, 0.0] , "a": 0.7, "b": 0.5},
-    # {"type": "ellipse",         'q':[0.7, -0.2, 0.4] , "a": 0.6, "b": 0.4},
-    # {"type": "ellipse",         'q':[-1.0, 1.7, -0.4] , "a": 0.6, "b": 0.4},
+    # {"type": "ellipse", 'q':[0.001, 0.0, -0.3] , "a": 0.65, "b": 0.4}
+    # {"type": "ellipse", 'q':[0.001, 0.7, -1.2] , "a": 0.65, "b": 0.3}, {"type": "ellipse", 'q':[0.3, 1.5, 0.2] ,  "a": 0.4, "b": 0.3},
+    # {"type": "ellipse", 'q':[-1.2, 0.5, 0.0] ,   "a": 0.7, "b": 0.5},  {"type": "ellipse", 'q':[0.7, -0.2, 0.4] , "a": 0.6, "b": 0.4},
+    # {"type": "ellipse", 'q':[-1.0, 1.7, -0.4] ,  "a": 0.6, "b": 0.4},
 
     ## Bowling
-    # {"type": "circle",          'q':[0.0, -0.5, 0.0] , "r": 0.45}, {"type": "circle", 'q':[0.5, 0.3, 0.0]  , "r": 0.45},
-    # {"type": "circle",          'q':[-0.5, 0.3, 0.0] , "r": 0.45}, {"type": "circle", 'q':[0.0, 1.1, 0.0]  , "r": 0.45},
-    # {"type": "circle",          'q':[1.0, 1.1, 0.0]  , "r": 0.45}, {"type": "circle", 'q':[-1.0, 1.1, 0.0] , "r": 0.45},
+    # {"type": "circle", 'q':[0.0, -0.5, 0.0] , "r": 0.45}, {"type": "circle", 'q':[0.5, 0.3, 0.0]  , "r": 0.45},
+    # {"type": "circle", 'q':[-0.5, 0.3, 0.0] , "r": 0.45}, {"type": "circle", 'q':[0.0, 1.1, 0.0]  , "r": 0.45},
+    # {"type": "circle", 'q':[1.0, 1.1, 0.0]  , "r": 0.45}, {"type": "circle", 'q':[-1.0, 1.1, 0.0] , "r": 0.45},
 
     ## Polygons
-    {"type": "srpolygon",  'q':[-1.0, -1.0, 0.0] , "a": 0.6, "k": 6},
-    {"type": "srpolygon",  'q':[-0.5, 1.0, 0.4] , "a": 0.4, "k": 3},
-    {"type": "srpolygon",  'q':[0.7, -0.2, -0.1] , "a": 0.5, "k": 4},
-    {"type": "srpolygon",  'q':[1.0, 1.0, 0.2] , "a": 0.6, "k": 5},
-    {"type": "srpolygon",  'q':[0.0, 2.0, 0.0] , "a": 0.5, "k": 8},
+    # {"type": "srpolygon",  'q':[-1.0, -1.0, 0.0] , "a": 0.6, "k": 6},
+    # {"type": "srpolygon",  'q':[-0.5, 1.0, 0.4] ,  "a": 0.4, "k": 3},
+    # {"type": "srpolygon",  'q':[0.7, -0.2, -0.1] , "a": 0.5, "k": 4},
+    # {"type": "srpolygon",  'q':[1.0, 1.0, 0.2] ,   "a": 0.6, "k": 5},
+    # {"type": "srpolygon",  'q':[0.0, 2.0, 0.0] ,   "a": 0.5, "k": 8},
 
+  ]
+
+obstacles:
+  [
+    {"type": "superellipse", 'q':[-2.3, 2.0, 0.0], "a": 2.0, "b": 0.5, "n": 100},
+    {"type": "superellipse", 'q':[ 2.3, 2.0, 0.0], "a": 2.0, "b": 0.5, "n": 100},
   ]

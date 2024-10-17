@@ -42,7 +42,7 @@ class QuasiStateSim(object):
                         ).solve()
 
         if sol[0] is None:
-            print('[0] Solver failed: ', sol)
+            # print('[0] Solver failed: ', sol)
             return qs, qp + u_input
 
         if np.max(A.dot(JS.T.dot(sol[0][:l]))) > 0.05:
