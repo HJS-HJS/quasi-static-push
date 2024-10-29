@@ -93,13 +93,18 @@ pusher_num      = config["pusher"]["pusher_num"]
 pusher_angle    = np.deg2rad(config["pusher"]["pusher_angle"])
 pusher_type     = config["pusher"]["pusher_type"]
 pusher_distance = config["pusher"]["pusher_distance"]
+pusher_d_u_limit= config["pusher"]["pusher_d_u_limit"]
+pusher_d_l_limit= config["pusher"]["pusher_d_l_limit"]
+
 pusher_position = config["pusher"]["pusher_position"]
 pusher_rotation = np.deg2rad(config["pusher"]["pusher_rotation"])
 
 # Set pusher speed
 u_input = np.zeros(3)                            # Initialize pusher's speed set as zeros 
+width   = pusher_distance                        # Initialize pusher's speed set as zeros 
 unit_v_speed = config["pusher"]["unit_v_speed"]  # [m/s]
 unit_r_speed = config["pusher"]["unit_r_speed"]  # [rad/s]
+unit_w_speed = config["pusher"]["unit_w_speed"]  # [m/s]
 
 # Set sliders
 slider_diagram = config["sliders"]         # Get sliders property (type, pose, parameters)
@@ -190,11 +195,16 @@ while True:
     if keys[pygame.K_q]:   u_input[2] +=  unit_r_speed/10  # Turn ccw          (q)
     elif keys[pygame.K_e]: u_input[2] += -unit_r_speed/10  # Turn cw           (e)
     else:                  u_input[2] = 0                  # Stop
+    # Control gripper width (left, right)
+    if keys[pygame.K_LEFT]:    pushers.width += -unit_w_speed  # Decrease width
+    elif keys[pygame.K_RIGHT]: pushers.width +=  unit_w_speed  # Increase width
 
     # Limit pusher speed
     if np.abs(u_input[0]) > unit_v_speed: u_input[0] = np.sign(u_input[0]) * unit_v_speed # Limit forward direction speed
     if np.abs(u_input[1]) > unit_v_speed: u_input[1] = np.sign(u_input[1]) * unit_v_speed # Limit sides direction speed
     if np.abs(u_input[2]) > unit_r_speed: u_input[2] = np.sign(u_input[2]) * unit_r_speed # Limit rotation speed
+    if   pushers.width > pusher_d_u_limit: pushers.width = pusher_d_u_limit               # Limit gripper width
+    elif pushers.width < pusher_d_l_limit: pushers.width = pusher_d_l_limit               # Limit gripper width
 
     # step time
     step_time(1, "Keyboard interaction")
