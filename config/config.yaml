@@ -6,7 +6,7 @@ simulator:
 display:
   WIDTH : 1600
   HEIGHT: 1200
-  unit:   0.0025 # [m/pixel]
+  unit:   0.0013 # [m/pixel]
 
 pusher:
   pusher_num      : 3
@@ -17,9 +17,9 @@ pusher:
 
   pusher_angle    : 120
   pusher_distance : 0.10
-  pusher_d_u_limit: 0.18
-  pusher_d_l_limit: 0.06
-  pusher_type     : {"type": "superellipse", "a": 0.03, "b": 0.06, "n": 10}
+  pusher_d_u_limit: 0.185
+  pusher_d_l_limit: 0.04
+  pusher_type     : {"type": "superellipse", "a": 0.015, "b": 0.03, "n": 10}
 
   pusher_position : [0.0, -1.2]
   pusher_rotation : 0
@@ -76,6 +76,6 @@ obstacles:
   ]
 
 auto:
-  maximun_number : 10
+  maximun_number : 15
   minimum_radius : 0.05
   maximum_radius : 0.15
