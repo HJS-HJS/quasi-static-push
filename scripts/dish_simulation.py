@@ -93,8 +93,8 @@ class DishSimulation():
         if not self.random:
             self.table_limit = np.array([WIDTH, HEIGHT])
         else:
-            rand_x = random.randint(WIDTH // 2, WIDTH)
-            rand_y = random.randint(HEIGHT // 2, HEIGHT)
+            rand_x = random.randint(WIDTH // 2, int(WIDTH * 0.9))
+            rand_y = random.randint(HEIGHT // 2, int(HEIGHT * 0.9))
             self.table_limit = np.array([rand_x, rand_y])
         self.backgound = self.create_background_surface(WIDTH, HEIGHT, self.table_limit, self.unit) # Generate pygame background surface
         self.table_limit = self.table_limit*self.unit/2
@@ -134,8 +134,8 @@ class DishSimulation():
             _margin  = _min_r
             points, radius = self.generate_spawn_points(_slider_num, _min_r, _max_r, self.table_limit, _margin)
             for point, _r in zip(points, radius):
-                a = random.uniform(_r, _min_r)
-                b = random.uniform(_r, _min_r)
+                a = np.clip(random.uniform(0.8, 1.0) * _r, a_min=_min_r, a_max=_r)
+                b = np.clip(random.uniform(0.75, 1.25) * a, a_min=_min_r, a_max=_r)
                 r = random.uniform(0, np.pi * 2)
                 sliders.append(Ellipse(np.hstack((point,[r])), a, b))
             obstacles = ObjectObstacle()
@@ -252,6 +252,7 @@ class DishSimulation():
             state = pygame.surfarray.array3d(surface)
         else:
             state = None
+
         ## reward
         reward = 0.0
         # time
@@ -260,8 +261,9 @@ class DishSimulation():
         dist = np.linalg.norm(self.param.sliders[0].q[0:2] - self.param.pushers.q[0:2])
         reward += 5 / np.exp(dist)
         # failed pusher on the slider
-        if success: reward += 0.5
-        if not success: print("failed")
+        if success: reward += 10
+        if not success: reward -= 10
+
         ## done
         done = False
         for slider in self.param.sliders:
@@ -306,7 +308,7 @@ class DishSimulation():
         
         points = np.array(points)
 
-        min_distances = np.zeros(len(points))
+        min_distances = np.ones(len(points)) * min_r
         min_distances[0] = init_r
 
         for idx, point in enumerate(points):
