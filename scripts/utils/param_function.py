@@ -9,15 +9,23 @@ class ParamFunction(object):
     '''
     Calculate objects param
     '''
-    def __init__(self, sliders:ObjectSlider, pushers:ObjectPusher, obstacles:ObjectObstacle, threshold:float = 1e-1):
+    def __init__(self, 
+                 sliders:ObjectSlider, 
+                 pushers:ObjectPusher,
+                 obstacles:ObjectObstacle, 
+                 threshold:float = 1e-2,
+                 fmscale:  float = 0.2,
+                 fascale:  float = 0.9,
+                 fbscale:  float = 0.001,
+                 ):
         self.sliders   = sliders
         self.pushers   = pushers
         self.obstacles = obstacles
         self.threshold = threshold
 
-        self.fmscale = 0.2
-        self.fascale = 0.9
-        self.fbscale = 0.001
+        self.fmscale = fmscale
+        self.fascale = fascale
+        self.fbscale = fbscale
 
         self.n_phi  = len(self.pushers) * len(self.sliders)\
               + ParamFunction.combination(len(self.sliders), 2)\
@@ -113,7 +121,7 @@ class ParamFunction(object):
         self.mu = np.eye(self.n_phi) * self.fmscale
         self.A  = np.zeros((3 * n_slider, 3 * n_slider))
         self.B  = np.eye(len(self.pushers.q)) * self.fbscale
-        self.B[2,2] *= 0.01
+        self.B[2:,2:] *= 0.01
 
         for idx, slider in enumerate(self.sliders):
             self.A[3*idx:3*idx + 3,3*idx:3*idx + 3] = slider.limit_constant * self.fascale
