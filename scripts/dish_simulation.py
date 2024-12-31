@@ -14,7 +14,7 @@ from utils.quasi_state_sim import QuasiStateSim
 
 from utils.color import COLOR
 
-class DishSimulation():
+class Simulation():
     def __init__(self, visualize:str = 'human', state:str = 'image', random:bool = True, action_skip:int = 5):
         """
         state : image, information
@@ -321,46 +321,6 @@ class DishSimulation():
         # 첫 번째 점을 포함한 최종 점 리스트
         return points, np.array(min_distances)
 
-    def keyboard_input(self, action):
-        # Keyboard event
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                break
-
-        # Keyboard input
-        keys = pygame.key.get_pressed()
-
-        ## Keyboard input response
-        # Move pusher center in y-axis (ws)
-        if keys[pygame.K_w]:   action[0] +=  self.unit_speed[0]/10  # Move forward      (w)
-        elif keys[pygame.K_s]: action[0] += -self.unit_speed[0]/10  # Move backward     (s)
-        else:                  action[0]  =  0                # Stop
-        # Move pusher center in x-axis (ad)
-        if keys[pygame.K_a]:   action[1] +=  self.unit_speed[0]/10  # Move left         (a)
-        elif keys[pygame.K_d]: action[1] += -self.unit_speed[0]/10  # Move right        (d)
-        else:                  action[1]  =  0                # Stop
-        # Rotate pusher center (qe)
-        if keys[pygame.K_q]:   action[2] +=  self.unit_speed[1]/10  # Turn ccw          (q)
-        elif keys[pygame.K_e]: action[2] += -self.unit_speed[1]/10  # Turn cw           (e)
-        else:                  action[2]  =  0                # Stop
-        # Control gripper width (left, right)
-        if keys[pygame.K_LEFT]:    action[3] = (-self.unit_speed[2]/10)  # Decrease width
-        elif keys[pygame.K_RIGHT]: action[3] = ( self.unit_speed[2]/10)  # Increase width
-        else:                      action[3] = 0
-
-        if keys[pygame.K_SPACE]:   action[4] = 1  # Gripper On
-        else:                      action[4] = 0  # Gripper Off
-
-        # Limit pusher speed
-        if np.abs(action[0]) > self.unit_speed[0]: action[0] = np.sign(action[0]) * self.unit_speed[0] # Limit forward direction speed
-        if np.abs(action[1]) > self.unit_speed[0]: action[1] = np.sign(action[1]) * self.unit_speed[0] # Limit sides direction speed
-        if np.abs(action[2]) > self.unit_speed[1]: action[2] = np.sign(action[2]) * self.unit_speed[1] # Limit rotation speed
-
-        if keys[pygame.K_r]: 
-            return np.zeros_like(action), True
-
-        return action, False
-
     def create_background_surface(self, width, height, table_size, unit, grid:bool = False):
         # Generate pygame surface
         background_surface = pygame.Surface((width, height))    # Generate pygame surface with specific size
@@ -410,11 +370,57 @@ class DishSimulation():
         pygame.draw.line(polygon_surface, COLOR["LIGHTGRAY"], (width / 2, height / 4), (width / 2, height * 3 / 4), 3)   # Draw vertical line
         return polygon_surface
 
+
+class DishSimulation():
+    def __init__(self, visualize:str = 'human', state:str = 'image', random:bool = True, action_skip:int = 5):
+        self.env = Simulation(visualize = visualize, state = state, random = random, action_skip = action_skip)
+
+    def keyboard_input(self, action):
+        # Keyboard event
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                break
+
+        # Keyboard input
+        keys = pygame.key.get_pressed()
+
+        ## Keyboard input response
+        # Move pusher center in y-axis (ws)
+        if keys[pygame.K_w]:   action[0] +=  self.env.unit_speed[0]/10  # Move forward      (w)
+        elif keys[pygame.K_s]: action[0] += -self.env.unit_speed[0]/10  # Move backward     (s)
+        else:                  action[0]  =  0                # Stop
+        # Move pusher center in x-axis (ad)
+        if keys[pygame.K_a]:   action[1] +=  self.env.unit_speed[0]/10  # Move left         (a)
+        elif keys[pygame.K_d]: action[1] += -self.env.unit_speed[0]/10  # Move right        (d)
+        else:                  action[1]  =  0                # Stop
+        # Rotate pusher center (qe)
+        if keys[pygame.K_q]:   action[2] +=  self.env.unit_speed[1]/10  # Turn ccw          (q)
+        elif keys[pygame.K_e]: action[2] += -self.env.unit_speed[1]/10  # Turn cw           (e)
+        else:                  action[2]  =  0                # Stop
+        # Control gripper width (left, right)
+        if keys[pygame.K_LEFT]:    action[3] = (-self.env.unit_speed[2]/10)  # Decrease width
+        elif keys[pygame.K_RIGHT]: action[3] = ( self.env.unit_speed[2]/10)  # Increase width
+        else:                      action[3] = 0
+
+        if keys[pygame.K_SPACE]:   action[4] = 1  # Gripper On
+        else:                      action[4] = 0  # Gripper Off
+
+        # Limit pusher speed
+        if np.abs(action[0]) > self.env.unit_speed[0]: action[0] = np.sign(action[0]) * self.env.unit_speed[0] # Limit forward direction speed
+        if np.abs(action[1]) > self.env.unit_speed[0]: action[1] = np.sign(action[1]) * self.env.unit_speed[0] # Limit sides direction speed
+        if np.abs(action[2]) > self.env.unit_speed[1]: action[2] = np.sign(action[2]) * self.env.unit_speed[1] # Limit rotation speed
+
+        if keys[pygame.K_r]: 
+            return np.zeros_like(action), True
+
+        return action, False
+
+
 if __name__=="__main__":
-    run = DishSimulation()
+    sim = DishSimulation()
     action = np.zeros(5) # Initialize pusher's speed set as zeros 
     while True:
-        action, reset = run.keyboard_input(action)
-        state, reward, done = run.step(action=action)
+        action, reset = sim.keyboard_input(action)
+        state, reward, done = sim.env.step(action=action)
         if reset or done:
-            run.reset()
+            sim.env.reset()
