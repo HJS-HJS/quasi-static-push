@@ -38,8 +38,8 @@ def create_polygon_surface(points, color):
     _points[:,1] = -1.0 * _points[:,1] + h_l
 
     # Set pygame surface size
-    width  = w_l * 2
-    height = h_l * 2
+    width  = int(w_l * 2)
+    height = int(h_l * 2)
     # Generate pygame surface
     polygon_surface = pygame.Surface((width, height), pygame.SRCALPHA)
     # Draw
@@ -100,7 +100,7 @@ pusher_position = config["pusher"]["pusher_position"]
 pusher_rotation = np.deg2rad(config["pusher"]["pusher_rotation"])
 
 # Set pusher speed
-u_input = np.zeros(3)                            # Initialize pusher's speed set as zeros 
+u_input = np.zeros(4)                            # Initialize pusher's speed set as zeros 
 width   = pusher_distance                        # Initialize pusher's speed set as zeros 
 unit_v_speed = config["pusher"]["unit_v_speed"]  # [m/s]
 unit_r_speed = config["pusher"]["unit_r_speed"]  # [rad/s]
@@ -120,7 +120,7 @@ dist_threshold = float(config["simulator"]["dist_threshold"]) # Distance to deci
 
 ## Generate objects
 # Generate pushers
-pushers = ObjectPusher(pusher_num, pusher_angle, pusher_type, pusher_distance, pusher_position[0], pusher_position[1], pusher_rotation)
+pushers = ObjectPusher(pusher_num, pusher_angle, pusher_type, pusher_distance, pusher_d_u_limit, pusher_d_l_limit, pusher_position[0], pusher_position[1], pusher_rotation)
 # Generate sliders
 sliders = ObjectSlider()
 for slider in slider_diagram:
@@ -196,15 +196,14 @@ while True:
     elif keys[pygame.K_e]: u_input[2] += -unit_r_speed/10  # Turn cw           (e)
     else:                  u_input[2] = 0                  # Stop
     # Control gripper width (left, right)
-    if keys[pygame.K_LEFT]:    pushers.width += -unit_w_speed  # Decrease width
-    elif keys[pygame.K_RIGHT]: pushers.width +=  unit_w_speed  # Increase width
+    if keys[pygame.K_LEFT]:    u_input[3] += -unit_w_speed  # Decrease width
+    elif keys[pygame.K_RIGHT]: u_input[3] +=  unit_w_speed  # Increase width
+    else:                      u_input[3] = 0
 
     # Limit pusher speed
     if np.abs(u_input[0]) > unit_v_speed: u_input[0] = np.sign(u_input[0]) * unit_v_speed # Limit forward direction speed
     if np.abs(u_input[1]) > unit_v_speed: u_input[1] = np.sign(u_input[1]) * unit_v_speed # Limit sides direction speed
     if np.abs(u_input[2]) > unit_r_speed: u_input[2] = np.sign(u_input[2]) * unit_r_speed # Limit rotation speed
-    if   pushers.width > pusher_d_u_limit: pushers.width = pusher_d_u_limit               # Limit gripper width
-    elif pushers.width < pusher_d_l_limit: pushers.width = pusher_d_l_limit               # Limit gripper width
 
     # step time
     step_time(1, "Keyboard interaction")
@@ -228,8 +227,8 @@ while True:
         [np.cos(pushers.rot),  -np.sin(pushers.rot)]
         ])
     # Run quasi-static simulator
-    qs, qp = simulator.run(
-        u_input = np.hstack([_rot@u_input[:2], u_input[2]]) * frame,
+    qs, qp, success = simulator.run(
+        u_input = np.hstack([_rot@u_input[:2], u_input[2], u_input[3]]) * frame,
         qs  = _qs,
         qp  = _qp,
         phi = _phi,
@@ -249,9 +248,9 @@ while True:
     # Step4. Apply simuation results
 
     ## Update simulation results
-    sliders.apply_v((qs - param.qs) / frame) # Update slider velocity
+    sliders.apply_v((qs - _qs) / frame) # Update slider velocity
     sliders.apply_q(qs)                      # Update slider position
-    pushers.apply_v((qp - param.qp) / frame) # Update pusher velocity
+    pushers.apply_v((qp - _qp) / frame) # Update pusher velocity
     pushers.apply_q(qp)                      # Update pusher position
 
     # step time

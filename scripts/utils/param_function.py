@@ -37,7 +37,7 @@ class ParamFunction(object):
         self.phi    = np.zeros(self.n_phi)
         self.nhat   = np.zeros((self.n_phi, 2))
         self.vc     = np.zeros((self.n_phi, 2))
-        self.vc_jac = np.zeros((self.n_phi * 2, len(self.v)))
+        self.vc_jac = np.zeros((self.n_phi * 2, len(self.q)))
         self.JN     = np.zeros((self.n_phi,     len(self.q)))
         self.JT     = np.zeros((2 * self.n_phi, len(self.q)))
         
@@ -45,6 +45,7 @@ class ParamFunction(object):
         _dt = 0.0001
 
         pusher_dv = self.pushers.pusher_dv(_dt)
+        # print(pusher_dv)
 
         i = -1
         n_slider = len(self.sliders)
@@ -60,7 +61,7 @@ class ParamFunction(object):
                 self.nhat[i,:] = slider.normal_vector(ans[0])
                 # self.nhat[i,:] = -pusher.normal_vector(ans[1])
                 self.vc_jac[2*i:2*i+2,3*i_s:3*i_s+3] =           -slider.local_velocity_grad(ans[0], _dt).T / _dt
-                self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+3] =  pusher.local_velocity_grad(ans[1], _dt, pusher_dv[i_p]).T / _dt
+                self.vc_jac[2*i:2*i+2,3*n_slider:3*n_slider+4] =  pusher.local_velocity_grad(ans[1], _dt, pusher_dv[i_p]).T / _dt
 
         # Parameter calculation between sliders
         for i_s1 in range(len(self.sliders)):
