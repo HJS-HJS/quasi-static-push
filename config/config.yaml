@@ -9,16 +9,16 @@ display:
   unit:   0.0025 # [m/pixel]
 
 pusher:
-  pusher_num      : 2
+  pusher_num      : 3
 
   # pusher_angle    : 180
   # pusher_distance : 0.25
   # pusher_type     : {"type": "circle", "r": 0.1}
 
   pusher_angle    : 120
-  pusher_distance : 0.15
-  pusher_d_u_limit: 0.30
-  pusher_d_l_limit: 0.04
+  pusher_distance : 0.10
+  pusher_d_u_limit: 0.18
+  pusher_d_l_limit: 0.06
   pusher_type     : {"type": "superellipse", "a": 0.03, "b": 0.06, "n": 10}
 
   pusher_position : [0.0, -1.2]
@@ -77,5 +77,5 @@ obstacles:
 
 auto:
   maximun_number : 10
-  minimum_radius : 0.12
-  maximum_radius : 0.35
+  minimum_radius : 0.05
+  maximum_radius : 0.15

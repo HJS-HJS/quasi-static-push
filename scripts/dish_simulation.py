@@ -172,7 +172,7 @@ class DishSimulation():
             _qs, _qp, _phi, _JNS, _JNP, _JTS, _JTP, _mu, _A, _B = self.param.get_simulate_param()
             if action[4]:
                 if not self.gripper_on:
-                    if np.min(_phi) < -0.001: 
+                    if np.min(_phi[:len(self.param.pushers) * len(self.param.sliders)]) < -0.001: 
                         success = False
                         break
                 self.gripper_on = True
@@ -355,7 +355,7 @@ class DishSimulation():
         if np.abs(action[2]) > self.unit_speed[1]: action[2] = np.sign(action[2]) * self.unit_speed[1] # Limit rotation speed
 
         if keys[pygame.K_r]: 
-            return np.zeros(4), True
+            return np.zeros_like(action), True
 
         return action, False
 
@@ -414,5 +414,5 @@ if __name__=="__main__":
     while True:
         action, reset = run.keyboard_input(action)
         state, reward, done = run.step(action=action)
-        if reset: run.reset()
-        if done: run.reset()
+        if reset or done:
+            run.reset()
