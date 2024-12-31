@@ -6,7 +6,7 @@ simulator:
 display:
   WIDTH : 1600
   HEIGHT: 1200
-  unit:   0.005 # [m/pixel]
+  unit:   0.0025 # [m/pixel]
 
 pusher:
   pusher_num      : 2
@@ -16,10 +16,10 @@ pusher:
   # pusher_type     : {"type": "circle", "r": 0.1}
 
   pusher_angle    : 120
-  pusher_distance : 0.35
-  pusher_d_u_limit: 0.8
-  pusher_d_l_limit: 0.15
-  pusher_type     : {"type": "superellipse", "a": 0.05, "b": 0.1, "n": 10}
+  pusher_distance : 0.15
+  pusher_d_u_limit: 0.30
+  pusher_d_l_limit: 0.04
+  pusher_type     : {"type": "superellipse", "a": 0.03, "b": 0.06, "n": 10}
 
   pusher_position : [0.0, -1.2]
   pusher_rotation : 0
@@ -61,11 +61,11 @@ sliders:
     # {"type": "circle", 'q':[1.0, 1.1, 0.0]  , "r": 0.45}, {"type": "circle", 'q':[-1.0, 1.1, 0.0] , "r": 0.45},
 
     ## Polygons
-    {"type": "srpolygon",  'q':[-1.0, -1.0, 0.0] , "a": 0.6, "k": 6},
-    {"type": "srpolygon",  'q':[-0.5, 1.0, 0.4] ,  "a": 0.4, "k": 3},
-    {"type": "srpolygon",  'q':[0.7, -0.2, -0.1] , "a": 0.5, "k": 4},
-    {"type": "srpolygon",  'q':[1.0, 1.0, 0.2] ,   "a": 0.6, "k": 5},
-    {"type": "srpolygon",  'q':[0.0, 2.0, 0.0] ,   "a": 0.5, "k": 8},
+    {"type": "srpolygon",  'q':[-0.5, -0.25, 0.0] ,  "a": 0.15, "k": 6},
+    {"type": "srpolygon",  'q':[-0.25, 1.0, 0.4] ,   "a": 0.1,  "k": 3},
+    {"type": "srpolygon",  'q':[0.35, -0.25, -0.1] , "a": 0.24, "k": 4},
+    {"type": "srpolygon",  'q':[0.5, 0.5, 0.2] ,     "a": 0.15, "k": 5},
+    {"type": "srpolygon",  'q':[0.0, 1.0, 0.0] ,     "a": 0.12, "k": 8},
 
   ]
 
@@ -74,3 +74,8 @@ obstacles:
     # {"type": "superellipse", 'q':[-2.3, 2.0, 0.0], "a": 2.0, "b": 0.5, "n": 100},
     # {"type": "superellipse", 'q':[ 2.3, 2.0, 0.0], "a": 2.0, "b": 0.5, "n": 100},
   ]
+
+auto:
+  maximun_number : 10
+  minimum_radius : 0.12
+  maximum_radius : 0.35
