@@ -15,14 +15,14 @@ from utils.quasi_state_sim import QuasiStateSim
 from utils.color import COLOR
 
 class Simulation():
-    def __init__(self, visualize:str = 'human', state:str = 'image', random:bool = True, action_skip:int = 5):
+    def __init__(self, visualize:str = 'human', state:str = 'image', random_place:bool = True, action_skip:int = 5):
         """
         state : image, information
         """
         # Get initial param
         self.state = state
         self.action_skip = action_skip
-        self.random = random
+        self.random = random_place
         self.gripper_on = False
 
         # Set pygame display
@@ -35,7 +35,7 @@ class Simulation():
             print("[Info] simulator is visulaized")
 
         ## Get config file
-        with open("../config/config.yaml") as f:
+        with open(os.path.dirname(os.path.abspath(__file__)) + "/../config/config.yaml") as f:
             self.config = yaml.load(f,Loader=yaml.FullLoader)
 
         # Set patameters
@@ -65,8 +65,13 @@ class Simulation():
         unit_w_speed = self.config["pusher"]["unit_w_speed"]  # [m/s]
         self.unit_speed = [unit_v_speed, unit_v_speed, unit_r_speed]
 
+        # Set slider 
+        self.slider_num = random.randint(1, self.config["auto"]["maximun_number"]) # Get sliders number
+        self.min_r = self.config["auto"]["minimum_radius"]
+        self.max_r = self.config["auto"]["maximum_radius"]
+
         # Set simulate param
-        fps = self.config["simulator"]["fps"]           # Get simulator fps from config.yaml
+        fps = self.config["simulator"]["fps"]      # Get simulator fps from config.yaml
         self.frame = 1 / fps                       # 1 frame = 1/fps
         sim_step = self.config["simulator"]["sim_step"] # Maximun LCP solver step
         self.dist_threshold = float(self.config["simulator"]["dist_threshold"]) # Distance to decide whether to calculate parameters
@@ -79,7 +84,12 @@ class Simulation():
         # Generate quasi-static simulation class
         self.simulator = QuasiStateSim(sim_step)
 
-        self.reset()
+        state, _, _ = self.reset()
+
+        # self.observation_space = Box(low=-np.inf, high=np.inf, shape=state.shape, dtype=np.float32)
+        # self.action_space = Box(low=-1.0, high=1.0, shape=(5,), dtype=np.float32)
+        self.observation_space = state
+        self.action_space = np.zeros(5)
 
     def reset(self):
         
@@ -125,21 +135,18 @@ class Simulation():
                 elif obstacle["type"] == "rpolygon":     obstacles.append(RPolygon(obstacle['q'], obstacle['a'], obstacle['k']))
                 elif obstacle["type"] == "srpolygon":    obstacles.append(SmoothRPolygon(obstacle['q'], obstacle['a'], obstacle['k']))
         else:
-            _slider_num = random.randint(1, self.config["auto"]["maximun_number"]) # Get sliders number
-            _min_r = self.config["auto"]["minimum_radius"]
-            _max_r = self.config["auto"]["maximum_radius"]
-
             # Generate sliders
             sliders = ObjectSlider()
-            _margin  = _min_r
-            points, radius = self.generate_spawn_points(_slider_num, _min_r, _max_r, self.table_limit, _margin)
+            _margin  = self.min_r
+            points, radius = self.generate_spawn_points(self.slider_num, self.min_r, self.max_r, self.table_limit, _margin)
             for point, _r in zip(points, radius):
-                a = np.clip(random.uniform(0.8, 1.0) * _r, a_min=_min_r, a_max=_r)
-                b = np.clip(random.uniform(0.75, 1.25) * a, a_min=_min_r, a_max=_r)
+                a = np.clip(random.uniform(0.8, 1.0) * _r, a_min=self.min_r, a_max=_r)
+                b = np.clip(random.uniform(0.75, 1.25) * a, a_min=self.min_r, a_max=_r)
                 r = random.uniform(0, np.pi * 2)
                 sliders.append(Ellipse(np.hstack((point,[r])), a, b))
             obstacles = ObjectObstacle()
-
+        
+        self.state_max_num = len(self.pushers.q) + self.slider_num * 3
 
         # Generate pygame object surfaces
         for pusher in self.pushers: pusher.polygon = self.create_polygon_surface(pusher.torch_points.cpu().numpy().T, COLOR["RED"],   self.unit) # Generate pygame pushers surface
@@ -251,7 +258,9 @@ class Simulation():
             surface = pygame.display.get_surface()
             state = pygame.surfarray.array3d(surface)
         else:
-            state = None
+            state = np.zeros(self.state_max_num)
+            _state = np.hstack((self.param.qp, self.param.qs))
+            state[:len(_state)] = _state
 
         ## reward
         reward = 0.0
@@ -372,8 +381,8 @@ class Simulation():
 
 
 class DishSimulation():
-    def __init__(self, visualize:str = 'human', state:str = 'image', random:bool = True, action_skip:int = 5):
-        self.env = Simulation(visualize = visualize, state = state, random = random, action_skip = action_skip)
+    def __init__(self, visualize:str = 'human', state:str = 'image', random_place:bool = True, action_skip:int = 5):
+        self.env = Simulation(visualize = visualize, state = state, random_place = random_place, action_skip = action_skip)
 
     def keyboard_input(self, action):
         # Keyboard event
@@ -417,7 +426,7 @@ class DishSimulation():
 
 
 if __name__=="__main__":
-    sim = DishSimulation()
+    sim = DishSimulation(state='linear')
     action = np.zeros(5) # Initialize pusher's speed set as zeros 
     while True:
         action, reset = sim.keyboard_input(action)
