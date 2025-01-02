@@ -13,7 +13,7 @@ class ParamFunction(object):
                  sliders:ObjectSlider, 
                  pushers:ObjectPusher,
                  obstacles:ObjectObstacle, 
-                 threshold:float = 1e-2,
+                 threshold:float = 5e-3,
                  fmscale:  float = 0.2,
                  fascale:  float = 0.9,
                  fbscale:  float = 0.001,
@@ -62,7 +62,8 @@ class ParamFunction(object):
             for i_p, pusher in enumerate(self.pushers):
                 i += 1
                 # Near diagram check
-                if not self.is_collision_available(slider, pusher, self.threshold): continue
+                if i_s != 0: 
+                    if not self.is_collision_available(slider, pusher, self.threshold): continue
                 ans = slider.cal_collision_data(pusher)
                 # check collision distance
                 self.phi[i]    = ans[2]
@@ -127,7 +128,8 @@ class ParamFunction(object):
             self.A[3*idx:3*idx + 3,3*idx:3*idx + 3] = slider.limit_constant * self.fascale
 
     def get_simulate_param(self):
-        _thres_idx = np.where(self.phi < self.threshold / 5)
+        _thres_idx = np.where(self.phi < 10)
+        # _thres_idx = np.where(self.phi < self.threshold / 5)
         _thres_idx_twice = np.repeat(_thres_idx,2) * 2
         _thres_idx_twice[::2] += 1
         return self.qs, \
