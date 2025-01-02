@@ -112,8 +112,8 @@ class Simulation():
         if not self.random:
             self.table_limit = np.array([WIDTH, HEIGHT])
         else:
-            rand_x = random.randint(WIDTH // 2, int(WIDTH * 0.8))
-            rand_y = random.randint(HEIGHT // 2, int(HEIGHT * 0.8))
+            rand_x = random.randint(WIDTH // 3, int(WIDTH * 0.8))
+            rand_y = random.randint(HEIGHT // 3, int(HEIGHT * 0.8))
             self.table_limit = np.array([rand_x, rand_y])
         self.backgound = self.create_background_surface(WIDTH, HEIGHT, self.table_limit, self.unit, grid=False) # Generate pygame background surface
         self.table_limit = self.table_limit*self.unit/2
