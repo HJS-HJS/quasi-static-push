@@ -455,10 +455,12 @@ class DishSimulation():
 
 
 if __name__=="__main__":
-    sim = DishSimulation(state='linear')
+    # sim = DishSimulation(state='linear')
+    sim = DishSimulation()
     action = np.zeros(5) # Initialize pusher's speed set as zeros 
     while True:
         action, reset = sim.keyboard_input(action)
         state, reward, done = sim.env.step(action=action[:4])
+        print(state)
         if reset or done:
             sim.env.reset()

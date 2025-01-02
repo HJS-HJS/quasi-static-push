@@ -1,12 +1,12 @@
 simulator:
   fps      : 100  # 100fps
   sim_step : 100  # Maximun LCP solver step
-  dist_threshold: 1e-1 # Distance to decide whether to calculate parameters
+  dist_threshold: 5e-2 # Distance to decide whether to calculate parameters
 
 display:
-  WIDTH : 1600
+  WIDTH : 1200
   HEIGHT: 1200
-  unit:   0.0013 # [m/pixel]
+  unit:   0.0016 # [m/pixel]
 
 pusher:
   pusher_num      : 3

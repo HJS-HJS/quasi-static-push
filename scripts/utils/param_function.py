@@ -13,7 +13,7 @@ class ParamFunction(object):
                  sliders:ObjectSlider, 
                  pushers:ObjectPusher,
                  obstacles:ObjectObstacle, 
-                 threshold:float = 5e-3,
+                 threshold:float = 1e-2,
                  fmscale:  float = 0.2,
                  fascale:  float = 0.9,
                  fbscale:  float = 0.001,
