@@ -24,9 +24,12 @@ pusher:
   pusher_position : [0.0, -1.2]
   pusher_rotation : 0
 
-  unit_v_speed    : 0.8  # [m/s]
-  unit_r_speed    : 0.6  # [rad/s]
-  unit_w_speed    : 0.03 # [m/s]
+  # unit_v_speed    : 0.8  # [m/s]
+  # unit_r_speed    : 0.6  # [rad/s]
+  # unit_w_speed    : 0.05 # [m/s]
+  unit_v_speed    : 0.4  # [m/s]
+  unit_r_speed    : 0.3  # [rad/s]
+  unit_w_speed    : 0.05   # [m/s]
 
 sliders:
   [
@@ -78,4 +81,4 @@ obstacles:
 auto:
   maximun_number : 15
   minimum_radius : 0.05
-  maximum_radius : 0.15
+  maximum_radius : 0.125

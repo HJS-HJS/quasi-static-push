@@ -124,7 +124,7 @@ class LCPSolver():
         self.T = self.swapMatColumns(self.T,i,j)
 
     def clearDriverColumn(self,ind):
-        a = self.T[ind,-2]
+        a = self.T[ind,-2] + 1e-6
         self.T[ind] /= a
         for i in range(self.n):
             if i != ind:
