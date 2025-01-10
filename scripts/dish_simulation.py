@@ -38,7 +38,7 @@ class Simulation():
         else:
             print("[Info] simulator is visulaized")
         
-        if (visualize == "human") or (state == "image"):
+        if (visualize == "human") or (state != "linear"):
             self.visualization = True
         else: self.visualization = False
 
@@ -304,7 +304,13 @@ class Simulation():
             # image 
             surface = pygame.display.get_surface()
             state = pygame.surfarray.array3d(surface)
-            state = 2 * (state / 255.0) - 1
+        elif self.state == 'gray':
+            # image 
+            surface = pygame.display.get_surface()
+            img = pygame.surfarray.array3d(surface)
+            gray_img = np.dot(img[..., :], [0.299, 0.587, 0.114])
+            state = (2 * (gray_img / 255.0) - 1)
+            state = np.expand_dims(state, axis=2)
         else:
             # Linear
             # Table size    2 (x,y) [m]
@@ -340,7 +346,7 @@ class Simulation():
 
         if (dist - self.dist) < 1e-3:
             reward += 0.1
-        else: reward += -0.1
+        else: reward += -0.2
 
         self.dist = dist
 
