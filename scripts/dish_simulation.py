@@ -99,6 +99,7 @@ class Simulation():
             [-1., 1.],
             [0, 2],
         ])
+        self.param = None
         state, _, _ = self.reset()
 
         # self.observation_space = Box(low=-np.inf, high=np.inf, shape=state.shape, dtype=np.float32)
@@ -108,6 +109,7 @@ class Simulation():
 
 
     def reset(self, slider_num:int=None):
+        del self.param
         
         self.iter = 0
         
@@ -356,7 +358,7 @@ class Simulation():
                     break
 
                 success, phi = self._simulate_once(action=np.array([0., 0., 0., -1.]), repeat=1)
-                # self._visualize_update()
+                self._visualize_update()
                 target_phi = phi[:len(self.param.pushers)]
                 obs_phi=phi[len(self.param.pushers):len(self.param.pushers)*len(self.param.sliders)]
 
@@ -397,7 +399,8 @@ class Simulation():
         if max(target_phi) < 0.015:
             print("\t\tgrasp successed!!")
             done = True
-            reward = +50
+            # reward = +50
+            reward = +75
             obs_phi = obs_phi[np.where(obs_phi > 0)]
             if len(obs_phi) > 0:
                 reward += np.log(min(obs_phi)) * 5
@@ -500,6 +503,12 @@ class Simulation():
         return polygon_surface
 
     def close(self):
+        print("close")
+        pygame.quit()
+        del(self.param)
+
+    def __del__(self):
+        print("del")
         pygame.quit()
         del(self.param)
 
@@ -541,7 +550,9 @@ class DishSimulation():
             return np.zeros_like(action), True
 
         return action, False
-
+    
+    def __del__(self):
+        del self.env
 
 if __name__=="__main__":
     sim = DishSimulation(state='linear')
@@ -553,4 +564,5 @@ if __name__=="__main__":
         action, reset = sim.keyboard_input(action)
         state, reward, done = sim.env.step(action=action[:4])
         if reset or done:
-            sim.env.reset(slider_num=1)
+            # sim.env.reset(slider_num=1)
+            sim.env.reset(  )

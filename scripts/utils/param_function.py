@@ -170,3 +170,8 @@ class ParamFunction(object):
             return 0
         else:
             return int(math.factorial(n) / (math.factorial(n - r) * math.factorial(r)))
+        
+    def __del__(self):
+        del self.sliders
+        del self.pushers
+        del self.obstacles

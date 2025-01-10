@@ -26,3 +26,7 @@ class ObjectObstacle(object):
     @property
     def r(self)->np.array:
         return np.hstack([slider.r for slider in self.obstacles]).reshape(-1)
+    
+    def __del__(self):
+        for diagram in self:
+            del diagram

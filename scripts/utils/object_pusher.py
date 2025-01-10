@@ -102,3 +102,7 @@ class ObjectPusher(object):
             [np.sin(self.q[2]), -np.cos(self.q[2]), 0],
             [0, 0, 1],
         ])
+
+    def __del__(self):
+        for diagram in self:
+            del diagram

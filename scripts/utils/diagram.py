@@ -154,6 +154,13 @@ class Diagram(object):
         return np.array([
             [np.cos(theta), np.sin(theta)],
         ])
+    
+    def __del__(self):
+        del self.v
+        del self.polygon
+        del self.torch_points
+        del self.limit_constant
+        torch.cuda.empty_cache() 
 
 class Circle(Diagram):
     def __init__(self, q, radius):
