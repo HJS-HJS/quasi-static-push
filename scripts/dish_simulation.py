@@ -111,7 +111,7 @@ class Simulation():
     def reset(self, slider_num:int=None):
         del self.param
         
-        self.iter = 0
+        self.dist = 0.
         
         ## Set pygame display settings
         WIDTH, HEIGHT = self.config["display"]["WIDTH"], self.config["display"]["HEIGHT"] # Get pygame display size parameter from config.yaml
@@ -335,8 +335,14 @@ class Simulation():
         # reward += int((1 - (dist * 2))*100) / 1000 / 2
         # if dist > 0.3:
         #     reward += -(dist - 0.3)
-        
-        reward += (-dist**2 + 0.4**2) * 0.1 / 0.4**2 - 0.1
+
+        # reward += (-dist**2 + 0.4**2) * 0.1 / 0.4**2 - 0.1
+
+        if (dist - self.dist) < 1e-3:
+            reward += 0.1
+        else: reward += -0.1
+
+        self.dist = dist
 
         done = False
         if dist < 0.02:
