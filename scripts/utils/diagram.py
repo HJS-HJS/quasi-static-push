@@ -51,7 +51,8 @@ class Diagram(object):
     def gen_torch_points(self, npts:int=1000, tmin:float=0, trange:float=2*np.pi):
         _q = self.q
         self.q = np.array([0, 0, 0])
-        self.torch_points = torch.tensor(self.points(npts, tmin, trange), device=device, dtype=torch.float32).T
+        with torch.no_grad():
+            self.torch_points = torch.tensor(self.points(npts, tmin, trange), device=device, dtype=torch.float32).T
         self.q = _q
 
     def tangent_vector(self, theta:np.array) -> np.array:
@@ -77,61 +78,62 @@ class Diagram(object):
     
     def cal_collision_data(self, diagram2: "Diagram"):
 
-        def angle(v:torch.tensor) -> float:
-            return torch.atan2(v[1], v[0]).cpu().numpy()
+        with torch.no_grad():
+            def angle(v:torch.tensor) -> float:
+                return torch.atan2(v[1], v[0]).cpu().numpy()
+            
+            q1 = torch.tensor(self.q, device=device, dtype= torch.float32)
+            q2 = torch.tensor(diagram2.q, device=device, dtype= torch.float32)
+
+            rot_1 = torch.tensor([[torch.cos(q1[2]), -torch.sin(q1[2])],
+                                [torch.sin(q1[2]),  torch.cos(q1[2])]], device=device, dtype= torch.float32)
+            rot_2 = torch.tensor([[torch.cos(q2[2]), -torch.sin(q2[2])],
+                                [torch.sin(q2[2]),  torch.cos(q2[2])]], device=device, dtype= torch.float32)
+
+            diagram1_points = self.torch_points @ rot_1.T
+            diagram2_points = diagram2.torch_points @ rot_2.T + q2[:2] - q1[:2]
+            
+            # If the sign does not change by cross producting the tangent vector of diagram 1 and the point of diagram 2, the point of diagram 2 exists inside diagram 1.
+            # Tangent vector of diagram 1
+            diagram1_tangent_vectors = diagram1_points[1:] - diagram1_points[:-1]  # (99, 2)
+            # Point vector of diagram 2
+            diagram2_checker_vectors = diagram2_points.unsqueeze(1) - diagram1_points[:-1]      # (100, 99, 2)
+            # cross product two vector sets
+            cross_products = torch.sign((diagram1_tangent_vectors.unsqueeze(0)[:, :, 0] * diagram2_checker_vectors[:, :, 1] - 
+                                        diagram1_tangent_vectors.unsqueeze(0)[:, :, 1] * diagram2_checker_vectors[:, :, 0])) # (10, 99)
+
+            # Check if there is an external product whose sign does not change
+            is_overlap = torch.all(cross_products >= 0, dim=1)
+
+            # If overlap not exists
+            if not torch.any(is_overlap):
+                # Calculate the shortest distance between each point
+                distances = torch.cdist(diagram1_points, diagram2_points)
+                arg = torch.argmin(distances)
+                return [
+                    angle(diagram1_points[arg // len(distances)]),
+                    angle(diagram2_points[arg % len(distances)] - q2[:2] + q1[:2]),
+                    distances[arg // len(distances), arg % len(distances)].cpu().numpy()
+                ]
+            # If overlap exists
+            else:
+                # Calculate distance from internal overlapping points
+                # Get overlapping points
+                inside_points = diagram2_points[is_overlap]
+
+                distances = torch.cdist(diagram1_points, inside_points)
+                # Calculate shortest distance from each internal overlapping points
+                _min = torch.min(distances, dim=0)
+                # Calculate longest distance from each shortest distances
+                diagram2_arg = torch.argmax(_min[0])
+                diagram1_arg = _min[1][diagram2_arg]
+
+                return [
+                    angle(diagram1_points[diagram1_arg]),
+                    angle(inside_points[diagram2_arg] - q2[:2] + q1[:2]),
+                    -(_min[0][diagram2_arg]).cpu().numpy()
+                ]
         
-        q1 = torch.tensor(self.q, device=device, dtype= torch.float32)
-        q2 = torch.tensor(diagram2.q, device=device, dtype= torch.float32)
-
-        rot_1 = torch.tensor([[torch.cos(q1[2]), -torch.sin(q1[2])],
-                              [torch.sin(q1[2]),  torch.cos(q1[2])]], device=device, dtype= torch.float32)
-        rot_2 = torch.tensor([[torch.cos(q2[2]), -torch.sin(q2[2])],
-                              [torch.sin(q2[2]),  torch.cos(q2[2])]], device=device, dtype= torch.float32)
-
-        diagram1_points = self.torch_points @ rot_1.T
-        diagram2_points = diagram2.torch_points @ rot_2.T + q2[:2] - q1[:2]
-        
-        # If the sign does not change by cross producting the tangent vector of diagram 1 and the point of diagram 2, the point of diagram 2 exists inside diagram 1.
-        # Tangent vector of diagram 1
-        diagram1_tangent_vectors = diagram1_points[1:] - diagram1_points[:-1]  # (99, 2)
-        # Point vector of diagram 2
-        diagram2_checker_vectors = diagram2_points.unsqueeze(1) - diagram1_points[:-1]      # (100, 99, 2)
-        # cross product two vector sets
-        cross_products = torch.sign((diagram1_tangent_vectors.unsqueeze(0)[:, :, 0] * diagram2_checker_vectors[:, :, 1] - 
-                                     diagram1_tangent_vectors.unsqueeze(0)[:, :, 1] * diagram2_checker_vectors[:, :, 0])) # (10, 99)
-
-        # Check if there is an external product whose sign does not change
-        is_overlap = torch.all(cross_products >= 0, dim=1)
-
-        # If overlap not exists
-        if not torch.any(is_overlap):
-            # Calculate the shortest distance between each point
-            distances = torch.cdist(diagram1_points, diagram2_points)
-            arg = torch.argmin(distances)
-            return [
-                angle(diagram1_points[arg // len(distances)]),
-                angle(diagram2_points[arg % len(distances)] - q2[:2] + q1[:2]),
-                distances[arg // len(distances), arg % len(distances)].cpu().numpy()
-            ]
-        # If overlap exists
-        else:
-            # Calculate distance from internal overlapping points
-            # Get overlapping points
-            inside_points = diagram2_points[is_overlap]
-
-            distances = torch.cdist(diagram1_points, inside_points)
-            # Calculate shortest distance from each internal overlapping points
-            _min = torch.min(distances, dim=0)
-            # Calculate longest distance from each shortest distances
-            diagram2_arg = torch.argmax(_min[0])
-            diagram1_arg = _min[1][diagram2_arg]
-
-            return [
-                angle(diagram1_points[diagram1_arg]),
-                angle(inside_points[diagram2_arg] - q2[:2] + q1[:2]),
-                -(_min[0][diagram2_arg]).cpu().numpy()
-            ]
-    
     def gen_limit_constant(self):
         _npts = 1000
         _dtheta = np.pi * 2 / _npts
