@@ -256,13 +256,18 @@ class Simulation():
                         break
                 self.gripper_on = True
                 # Generate rotation matrix for pusher velocity input
+                # _rot = np.array([
+                #     [-np.sin(self.param.pushers.rot), -np.cos(self.param.pushers.rot)],
+                #     [np.cos(self.param.pushers.rot),  -np.sin(self.param.pushers.rot)]
+                #     ])
                 _rot = np.array([
-                    [-np.sin(self.param.pushers.rot), -np.cos(self.param.pushers.rot)],
-                    [np.cos(self.param.pushers.rot),  -np.sin(self.param.pushers.rot)]
+                    [ np.sin(np.pi), np.cos(np.pi)],
+                    [-np.cos(np.pi), np.sin(np.pi)]
                     ])
                 # Run quasi-static simulator
                 action[:4] += (np.random.random(4) - 0.5) * 0.00005
                 qs, qp, success = self.simulator.run(
+                    # u_input = np.hstack([action[:2], action[2], action[3]]) * self.frame,
                     u_input = np.hstack([_rot@action[:2], action[2], action[3]]) * self.frame,
                     qs  = _qs,
                     qp  = _qp,
@@ -297,7 +302,6 @@ class Simulation():
                 self.gripper_on = False
         
         return success, _phi
-
 
     def generate_result(self, success:bool = True, target_phi = [10., 10., 10.], obs_phi = [10.,]):
         """
@@ -348,8 +352,12 @@ class Simulation():
 
         # reward += (-dist**2 + 0.4**2) * 0.1 / 0.4**2 - 0.1
 
+        # if (dist - self.dist) < 1e-3:
+        #     reward += 0.1
+        # else: reward += -0.2
+
         if (dist - self.dist) < 1e-3:
-            reward += 0.1
+            reward += -0.1
         else: reward += -0.2
 
         self.dist = dist
