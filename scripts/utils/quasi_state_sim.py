@@ -59,7 +59,7 @@ class QuasiStateSim(object):
         return _qs, _qp, True
     
     def clipping(self, phi, JNS, JNP, JTS, JTP, mu):
-        _thres_idx = np.where(phi < 1e-6)
+        _thres_idx = np.where(phi < 1e-3)
         _thres_idx_twice = np.repeat(_thres_idx,2) * 2
 
         return phi[_thres_idx], \
