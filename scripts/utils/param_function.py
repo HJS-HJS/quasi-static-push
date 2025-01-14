@@ -122,7 +122,7 @@ class ParamFunction(object):
         self.mu = np.eye(self.n_phi) * self.fmscale
         self.A  = np.zeros((3 * n_slider, 3 * n_slider))
         self.B  = np.eye(len(self.pushers.q)) * self.fbscale
-        self.B[2:,2:] *= 0.01
+        self.B[2:,2:] *= 0.1
 
         for idx, slider in enumerate(self.sliders):
             self.A[3*idx:3*idx + 3,3*idx:3*idx + 3] = slider.limit_constant * self.fascale
