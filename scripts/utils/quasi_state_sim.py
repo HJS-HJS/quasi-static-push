@@ -47,19 +47,19 @@ class QuasiStateSim(object):
             # print('[0] Solver failed: ', sol)
             return qs, qp + u_input, True
 
-        if np.max(A.dot(JS.T.dot(sol[0][:l]))) > 0.05:
+        _d_qs = A.dot(JS.T.dot(sol[0][:l]))
+        if np.max(_d_qs) > 0.01:
             # print('[1] Solver jump: ', sol)
-            # print(A.dot(JS.T.dot(sol[0][:l])))
-            return qs, qp + u_input, False
+            return qs, qp, False
         
-        _qs = qs + A.dot(JS.T.dot(sol[0][:l]))
+        _qs = qs + _d_qs
         _qp = qp + u_input
         if not perfect_u_control: _qp += B.dot(JP.T.dot(sol[0][:l]))
 
         return _qs, _qp, True
     
     def clipping(self, phi, JNS, JNP, JTS, JTP, mu):
-        _thres_idx = np.where(phi < 1e-2)
+        _thres_idx = np.where(phi < 1e-6)
         _thres_idx_twice = np.repeat(_thres_idx,2) * 2
 
         return phi[_thres_idx], \
