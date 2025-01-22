@@ -95,6 +95,7 @@ class Simulation():
             [-1., 1.],
         ])
         self.param = None
+        self.state_next = None
 
         self.action_space = np.zeros_like(self.unit_speed)
         if state == "image" :   self.observation_space = np.zeros((self.display_size[0],self.display_size[1],3))
@@ -142,7 +143,8 @@ class Simulation():
         if pusher_pose is None:
             # Generate random position
             _q = np.sign(_sliders[0].q[0:2]) * 0.85 * self.display_size / 2 * self.unit
-            _q = [_q[0] * random.choice([1, -1]), _q[1] * random.choice([1, -1]), 0., random.uniform(self.pusher_d_l_limit, self.pusher_d_u_limit)]
+            # _q = [_q[0] * random.choice([1, -1]), _q[1] * random.choice([1, -1]), 0., random.uniform(self.pusher_d_l_limit, self.pusher_d_u_limit)]
+            _q = [_q[0], _q[1], 0., self.pusher_d_u_limit]
             pusher_pose = _q
         else:
             _q = pusher_pose
@@ -166,10 +168,6 @@ class Simulation():
         for slider in _sliders[1:]: slider.polygon = self.create_polygon_surface(slider.torch_points.cpu().numpy().T, COLOR["BLUE"]) # Generate pygame sliders surface
         _sliders[0].polygon                        = self.create_polygon_surface(_sliders[0].torch_points.cpu().numpy().T, COLOR["GREEN"]) # Generate pygame sliders surface
         self.pusher_bead                           = self.create_bead_surface()
-
-
-        self._prev_target_dist = 0.
-        self._slider_origin_dist = np.linalg.norm(_sliders.q.reshape(-1,3)[:,0:2] / self.table_limit, axis=1)
 
 
         # Quasi-static simulation class
@@ -364,8 +362,14 @@ class Simulation():
                 _sliders[5*idx:5*idx+5] = np.hstack((_slider.q, _slider.a, _slider.b))
 
             # Normalize
-            _pusher[3]     = (_pusher[3] - self.pusher_d_l_limit) / (self.pusher_d_u_limit - self.pusher_d_l_limit) - 0.5
-            _pusher[2]     = ((_pusher[2]     + np.pi) % (2 * np.pi)) / np.pi - 1
+            # _pusher[2]     = ((_pusher[2]     + np.pi) % (2 * np.pi)) / np.pi - 1
+            _vec = self.param.sliders[0].q[:2] - _pusher[:2]
+            _pusher[0] = np.linalg.norm(_vec)
+            _pusher[1] = np.arctan2(_vec[1], _vec[0]) / np.pi
+            _pusher[2]     = ((_pusher[2] * 3 / 2) % (np.pi)) / np.pi
+            _pusher[3]     = (_pusher[3] - self.pusher_d_l_limit) / (self.pusher_d_u_limit - self.pusher_d_l_limit)*2 - 1
+            _sliders[0::5] /= _table[0]
+            _sliders[1::5] /= _table[1]
             _sliders[2::5] = ((_sliders[2::5] + np.pi) % (2 * np.pi)) / np.pi - 1
 
             state1 = np.hstack((_table, _pusher, _sliders[:5]))
@@ -378,19 +382,10 @@ class Simulation():
         _slider_q = self.param.sliders.q.reshape(-1,3)[:,0:2]
         # distance
         target_dist = np.linalg.norm(self.param.sliders[0].q[0:2] - self.param.pushers.q[0:2])
-        slider_dist = np.linalg.norm(_slider_q / self.table_limit, axis=1)
 
         ## reward
         reward = 0.0
-        if (target_dist - self._prev_target_dist) < -1e-2: reward += 0.01
-        else: pass #reward += -0.01
-        _delta_slider_dist = np.where(self._slider_origin_dist - slider_dist + 1e-4 < 0)[0]
-        if len(_delta_slider_dist) > 0:
-            reward += -0.1 * np.sum(slider_dist[_delta_slider_dist])
-
-        self._prev_target_dist = target_dist
-        self._slider_origin_dist = slider_dist
-
+        self.state_next = state
 
         if target_dist < 0.01:
             _width = 10.
@@ -422,17 +417,34 @@ class Simulation():
                 del self.param.sliders[i]
             print("\t\t\tdish fall out")
             done = True
-            reward -= 5
+            reward = -1
         if max(target_phi) < 0.015:
             del self.param.sliders[0]
             print("\t\t\tgrasp successed!!")
             done = True
-            reward = +10
+            reward = +1
             obs_phi = obs_phi[np.where(obs_phi > 0)]
-            if len(obs_phi) > 0:
-                reward += np.log(min(obs_phi)) * 5 / 10
         return state, reward, done
     
+    def cal_reward(self, state, state_next):
+        if state_next is None: return 0
+        reward = 0
+        prev_gripper, prev_obs = state
+        curr_gripper, curr_obs = state_next
+
+        # slider pose
+        prev_dist = np.linalg.norm(np.vstack((prev_obs[:,:2],prev_gripper[6:8])), axis=1)
+        curr_dist = np.linalg.norm(np.vstack((curr_obs[:,:2],curr_gripper[6:8])), axis=1)
+
+        ## reward
+        reward = 0.0
+        if (curr_gripper[2] - prev_gripper[2]) < -1e-3: reward += -0.01
+        else: pass #reward += 0.01
+        _delta_slider_dist = np.where(prev_dist - curr_dist + 1e-4 < 0)[0]
+        if len(_delta_slider_dist) > 0:
+            reward += -0.1 * len(_delta_slider_dist)
+        return reward
+
     def get_setting(self):
         # Table setting
         table_size = self.table_limit * 2
@@ -444,14 +456,14 @@ class Simulation():
 
         return {"table_size":table_size, "pusher_pose":pusher_pose, "slider_pose":slider_pose, "slider_num":slider_num}
 
-    def generate_spawn_points(self, num_points, center_bias=0.8):
+    def generate_spawn_points(self, num_points, center_bias=0.75):
         points = []
-        x_range = (-self.table_limit[0] + self.min_r, self.table_limit[0] - self.min_r)
-        y_range = (-self.table_limit[1] + self.min_r, self.table_limit[1] - self.min_r)
+        x_range = (-self.table_limit[0] + self.min_r * 1.3, self.table_limit[0] - self.min_r * 1.3)
+        y_range = (-self.table_limit[1] + self.min_r * 1.3, self.table_limit[1] - self.min_r * 1.3)
 
         # 첫 번째 점을 랜덤하게 생성
-        center_x = random.uniform(*x_range)
-        center_y = random.uniform(*y_range)
+        center_x = random.uniform(*x_range) * 0.9
+        center_y = random.uniform(*y_range) * 0.9
         points.append((center_x, center_y))
 
         # Raduis of inital point
@@ -570,6 +582,8 @@ class DishSimulation():
                                            [1, -1, 1, 1],
                                            ])
         self._setting = None
+        self.save_dir = os.path.dirname(os.path.abspath(__file__)) + "/../../../../data/"
+        self.skip_frame = 0
 
     def keyboard_input(self, action):
         # Keyboard event
@@ -632,23 +646,75 @@ class DishSimulation():
                     slider_num  = self._setting["slider_num"],
                     )
                 self._count = (self._count + 1) % 4
-        
         return state_curr
+    
+    def save_data(self, state, action, reward, state_next, skip:int = 5, force_save:bool = False):
+        self.skip_frame += 1
+        if (self.skip_frame % skip != 0) and (not force_save):
+            return
+
+        os.makedirs(self.save_dir, exist_ok=True)  # 디렉토리가 없으면 생성
+        existing_folders = [f for f in os.listdir(self.save_dir) if f.isdigit()]
+        if existing_folders:
+            max_num = max(int(folder) for folder in existing_folders)
+        else:
+            max_num = 0
+
+        new_folder_num = max_num + 1
+        new_folder_path = os.path.join(self.save_dir, f"{new_folder_num:03d}")
+        os.makedirs(new_folder_path)
+
+        def save_file(data, name):
+            file_path = os.path.join(new_folder_path, name + ".npy")
+            np.save(file_path, np.array(data))
+
+        save_file(state[0], "state1")
+        save_file(state[1], "state2")
+        save_file(action, "action")
+        save_file(reward, "reward")
+        save_file(state_next[0], "state_next1")
+        save_file(state_next[1], "state_next2")
+        print("data saved at #", new_folder_num)
+        return
+    
+    def load_data(self):
+        data_list = []
+        for folder in sorted(os.listdir(self.save_dir)):
+            folder_path = os.path.join(self.save_dir, folder)
+            if os.path.isdir(folder_path):
+                state1 = np.load(os.path.join(folder_path, "state1.npy"))
+                state2 = np.load(os.path.join(folder_path, "state2.npy"))
+                action = np.load(os.path.join(folder_path, "action.npy"))
+                reward = np.load(os.path.join(folder_path, "reward.npy"))
+                state_next1 = np.load(os.path.join(folder_path, "state_next1.npy"))
+                state_next2 = np.load(os.path.join(folder_path, "state_next2.npy"))
+                data_list.append([
+                    state1,
+                    state2,
+                    action,
+                    reward + self.env.cal_reward((state1, state2), (state_next1, state_next2)),
+                    state_next1,
+                    state_next2,
+                ])
+        return data_list
 
     def __del__(self):
         del self.env
 
 if __name__=="__main__":
     sim = DishSimulation(state='linear', action_skip=1)
-    # sim = DishSimulation()
-    _ = sim.reset(mode="continous", slider_num=6)
+    sim.load_data()
+    state = sim.reset(mode="continous", slider_num=15)
     # observ_space = sim.env.observation_space.shape[0]
     action_space = sim.env.action_space.shape[0]
     action = np.zeros(action_space) # Initialize pusher's speed set as zeros 
     while True:
         action, reset = sim.keyboard_input(action)
-        state, reward, done = sim.env.step(action=action)
-        a, b = state
+        action = action * (0.5 + np.random.random(4) * 4 / 10)
+        state_next, reward, done = sim.env.step(action=action)
+        if np.any(action):
+            sim.save_data(state, action, reward, state_next, skip=30, force_save=done)
+        state = state_next
         if reset or done:
             # sim.env.reset(slider_num=1)
             sim.reset(mode="continous")
