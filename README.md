@@ -1,5 +1,5 @@
-# quasi-static-push
-Quasi-static pushing simulator
+# quasi-static-push-grasp-simulation
+Quasi-static pushing and grasping simulator
 
 - This repository is no longer maintained.
 - The simulation has been migrated from Python to C++.
